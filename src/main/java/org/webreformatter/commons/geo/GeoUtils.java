@@ -54,7 +54,7 @@ public class GeoUtils {
         // Where:
         // * lat_rad = ((lat_deg * π) / 360)
         // * sec == 1/cos
-        double latitudeRad = pointLatitude * Math.PI / 180;
+        double latitudeRad = Math.toRadians(pointLatitude);
         double result = (1 - Math.log(Math.tan(latitudeRad)
             + (1 / Math.cos(latitudeRad)))
             / Math.PI) / 2;

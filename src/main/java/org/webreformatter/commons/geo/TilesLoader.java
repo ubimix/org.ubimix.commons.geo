@@ -56,7 +56,6 @@ public class TilesLoader {
                 numberXTiles,
                 numberYTiles,
                 zoom);
-            println("");
             println(msg);
         }
 
@@ -156,6 +155,10 @@ public class TilesLoader {
         int minZoom,
         int maxZoom,
         ILoadListener listener) {
+        GeoPoint a = min;
+        GeoPoint b = max;
+        min = min(a, b);
+        max = max(a, b);
         for (int zoom = minZoom; zoom <= maxZoom; zoom++) {
             TileInfo minTile = new TileInfo(min, zoom);
             TileInfo maxTile = new TileInfo(max, zoom);
@@ -172,5 +175,17 @@ public class TilesLoader {
             }
             listener.end(min, max, zoom);
         }
+    }
+
+    private GeoPoint max(GeoPoint a, GeoPoint b) {
+        return new GeoPoint(
+            Math.max(a.getLongitude(), b.getLongitude()),
+            Math.max(a.getLatitude(), b.getLatitude()));
+    }
+
+    private GeoPoint min(GeoPoint a, GeoPoint b) {
+        return new GeoPoint(
+            Math.min(a.getLongitude(), b.getLongitude()),
+            Math.min(a.getLatitude(), b.getLatitude()));
     }
 }
