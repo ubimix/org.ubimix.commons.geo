@@ -27,6 +27,18 @@ public class GeoPoint {
             Math.min(a.getLatitude(), b.getLatitude()));
     }
 
+    public static GeoPoint newPoint(String lon, String lat) {
+        GeoPoint result = null;
+        try {
+            double a = Double.parseDouble(lon);
+            double b = Double.parseDouble(lat);
+            result = new GeoPoint(a, b);
+        } catch (Throwable t) {
+            // Just ignore it
+        }
+        return result;
+    }
+
     private final double fX;
 
     private final double fY;

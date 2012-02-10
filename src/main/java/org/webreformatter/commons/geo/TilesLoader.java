@@ -143,19 +143,19 @@ public class TilesLoader {
     }
 
     public void load(
-        GeoPoint min,
-        GeoPoint max,
+        GeoPoint first,
+        GeoPoint second,
         int minZoom,
         int maxZoom,
         ILoadListener listener) {
-        GeoPoint a = min;
-        GeoPoint b = max;
-        min = GeoPoint.min(a, b);
-        max = GeoPoint.max(a, b);
+        GeoPoint a = first;
+        GeoPoint b = second;
+        first = GeoPoint.min(a, b);
+        second = GeoPoint.max(a, b);
         for (int zoom = minZoom; zoom <= maxZoom; zoom++) {
-            TileInfo minTile = new TileInfo(min, zoom);
-            TileInfo maxTile = new TileInfo(max, zoom);
-            listener.begin(min, max, zoom);
+            TileInfo minTile = new TileInfo(first, zoom);
+            TileInfo maxTile = new TileInfo(second, zoom);
+            listener.begin(first, second, zoom);
             int xMin = minTile.getX();
             int xMax = maxTile.getX();
             int yMin = maxTile.getY();
@@ -166,8 +166,17 @@ public class TilesLoader {
                     listener.onTile(tile);
                 }
             }
-            listener.end(min, max, zoom);
+            listener.end(first, second, zoom);
         }
+    }
+
+    public void load(
+        GeoPoint first,
+        GeoPoint second,
+        ZoomLevel minZoom,
+        ZoomLevel maxZoom,
+        ILoadListener listener) {
+        load(first, second, minZoom.getLevel(), maxZoom.getLevel(), listener);
     }
 
 }
