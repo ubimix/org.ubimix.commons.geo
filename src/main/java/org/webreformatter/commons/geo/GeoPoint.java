@@ -15,6 +15,18 @@ public class GeoPoint {
         return new GeoPoint(width, height);
     }
 
+    public static GeoPoint max(GeoPoint a, GeoPoint b) {
+        return new GeoPoint(
+            Math.max(a.getLongitude(), b.getLongitude()),
+            Math.max(a.getLatitude(), b.getLatitude()));
+    }
+
+    public static GeoPoint min(GeoPoint a, GeoPoint b) {
+        return new GeoPoint(
+            Math.min(a.getLongitude(), b.getLongitude()),
+            Math.min(a.getLatitude(), b.getLatitude()));
+    }
+
     private final double fX;
 
     private final double fY;
@@ -30,7 +42,7 @@ public class GeoPoint {
 
     public GeoPoint checkGeoCoordinates() {
         double lon = GeoUtils.checkLongitude(fX);
-        double lat = GeoUtils.checkLongitude(fY);
+        double lat = GeoUtils.checkLatitutde(fY);
         return new GeoPoint(lon, lat);
     }
 

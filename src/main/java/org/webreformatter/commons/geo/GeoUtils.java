@@ -150,7 +150,7 @@ public class GeoUtils {
     // http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#lon.2Flat_to_tile_numbers
     public static double getTileLongitude(double pointLongitude) {
         // ((lon_deg + 180) / 360)
-        double value = (pointLongitude + 180) / 360;
+        double value = (pointLongitude + 180.0) / 360.0;
         return value;
     }
 
@@ -162,7 +162,7 @@ public class GeoUtils {
      * @return the longitude of the tile by the X coordinate of the tile
      */
     public static double getTileLongitudeByX(int tileX, int zoom) {
-        return tileX / Math.pow(2.0, zoom) * 360.0 - 180;
+        return tileX / Math.pow(2.0, zoom) * 360.0 - 180.0;
     }
 
     /**

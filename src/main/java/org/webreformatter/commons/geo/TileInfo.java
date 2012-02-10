@@ -8,6 +8,23 @@ package org.webreformatter.commons.geo;
  */
 public class TileInfo {
 
+    public static ImagePoint getTileNumber(
+        GeoPoint first,
+        GeoPoint second,
+        int zoom) {
+        GeoPoint min = GeoPoint.min(first, second);
+        GeoPoint max = GeoPoint.max(first, second);
+        TileInfo minTile = new TileInfo(min, zoom);
+        TileInfo maxTile = new TileInfo(max, zoom);
+        int xMin = minTile.getX();
+        int xMax = maxTile.getX();
+        int yMin = maxTile.getY();
+        int yMax = minTile.getY();
+        int numberXTiles = xMax - xMin + 1;
+        int numberYTiles = yMax - yMin + 1;
+        return new ImagePoint(numberXTiles, numberYTiles);
+    }
+
     private final int fX;
 
     private final int fY;
@@ -44,15 +61,17 @@ public class TileInfo {
         return fX == o.fX && fY == o.fY && fZoom == o.fZoom;
     }
 
-    public GeoPoint getBottomLeftCoordinates() {
-        return new GeoPoint(getLongitude(), getLatitude());
+    public GeoPoint getBottomRightCoordinates() {
+        double lon = GeoUtils.getTileLongitudeByX(incX(1), fZoom);
+        double lat = GeoUtils.getTileLatitudeByY(incY(1), fZoom);
+        return new GeoPoint(lon, lat).checkGeoCoordinates();
     }
 
     private double getDistance(int deltaX, int deltaY, int zoom) {
         double lon1 = GeoUtils.getTileLongitudeByX(fX, zoom);
         double lat1 = GeoUtils.getTileLatitudeByY(fY, zoom);
-        double lon2 = GeoUtils.getTileLongitudeByX(fX + deltaX, zoom);
-        double lat2 = GeoUtils.getTileLatitudeByY(fY + deltaY, zoom);
+        double lon2 = GeoUtils.getTileLongitudeByX(incX(deltaX), zoom);
+        double lat2 = GeoUtils.getTileLatitudeByY(incY(deltaY), zoom);
         return GeoUtils.getDistance(lon1, lat1, lon2, lat2);
     }
 
@@ -81,37 +100,9 @@ public class TileInfo {
     }
 
     public TileInfo getNextTile(int deltaX, int deltaY, int zoom) {
-        double longitude = GeoUtils.getTileLongitudeByX(fX + deltaX, zoom);
-        double latitude = GeoUtils.getTileLatitudeByY(fY + deltaY, zoom);
+        double longitude = GeoUtils.getTileLongitudeByX(incX(deltaX), zoom);
+        double latitude = GeoUtils.getTileLatitudeByY(incY(deltaY), zoom);
         return new TileInfo(longitude, latitude, zoom);
-    }
-
-    /**
-     * @return the next horizontal tile
-     */
-    public TileInfo getNextX() {
-        return getNextTile(1, 0, fZoom);
-    }
-
-    /**
-     * @return the next vertical tile
-     */
-    public TileInfo getNextY() {
-        return getNextTile(0, 1, fZoom);
-    }
-
-    /**
-     * @return the previous horizontal tile
-     */
-    public TileInfo getPrevX() {
-        return getNextTile(-1, 0, fZoom);
-    }
-
-    /**
-     * @return the previous vertical tile
-     */
-    public TileInfo getPrevY() {
-        return getNextTile(0, -1, fZoom);
     }
 
     /**
@@ -122,10 +113,10 @@ public class TileInfo {
         return GeoUtils.getTilePath(getLongitude(), getLatitude(), fZoom);
     }
 
-    public GeoPoint getTopRightCoordinates() {
-        double lon = GeoUtils.getTileLongitudeByX(fX + 1, fZoom);
-        double lat = GeoUtils.getTileLatitudeByY(fY - 1, fZoom);
-        return new GeoPoint(lon, lat);
+    public GeoPoint getTopLeftCoordinates() {
+        double lon = GeoUtils.getTileLongitudeByX(incX(0), fZoom);
+        double lat = GeoUtils.getTileLatitudeByY(incY(0), fZoom);
+        return new GeoPoint(lon, lat).checkGeoCoordinates();
     }
 
     /**
@@ -173,17 +164,27 @@ public class TileInfo {
      *         tile
      */
     public boolean in(double longitude, double latitude) {
-        double longMin = GeoUtils.getTileLongitudeByX(fX, fZoom);
-        double longMax = GeoUtils.getTileLongitudeByX(fX + 1, fZoom);
-        if (longitude < longMin || longitude > longMax) {
-            return false;
-        }
-        double latMin = GeoUtils.getTileLatitudeByY(fY + 1, fZoom);
-        double latMax = GeoUtils.getTileLatitudeByY(fY, fZoom);
-        if (latitude < latMin || latitude > latMax) {
-            return false;
-        }
-        return true;
+        double longMin = GeoUtils.getTileLongitudeByX(incX(0), fZoom);
+        double longMax = GeoUtils.getTileLongitudeByX(incX(1), fZoom);
+        double latMin = GeoUtils.getTileLatitudeByY(incY(0), fZoom);
+        double latMax = GeoUtils.getTileLatitudeByY(incY(-1), fZoom);
+        boolean lonIn = in(longMin, longMax, longitude);
+        boolean latIn = in(latMin, latMax, latitude);
+        return lonIn & latIn;
+    }
+
+    private <T extends Comparable<T>> boolean in(T first, T second, T point) {
+        int a = point.compareTo(first);
+        int b = point.compareTo(second);
+        return a * b <= 0;
+    }
+
+    private int incX(int deltaX) {
+        return fX + deltaX;
+    }
+
+    private int incY(int deltaY) {
+        return fY - deltaY;
     }
 
     @Override

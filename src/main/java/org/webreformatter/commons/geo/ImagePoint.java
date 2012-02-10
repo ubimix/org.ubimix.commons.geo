@@ -12,9 +12,6 @@ public class ImagePoint {
     }
 
     public static double getImageBearing(long deltaX, long deltaY) {
-        if (deltaY == 0) {
-            return 0;
-        }
         // double bearing = Math.atan(deltaX / deltaY);
         double bearing = Math.atan2(deltaX, deltaY);
         return bearing;
@@ -63,7 +60,7 @@ public class ImagePoint {
     public double getDistance(ImagePoint point) {
         double distance = Math.sqrt(Math.pow(point.fX - fX, 2)
             + Math.pow(point.fY - fY, 2));
-        return distance;
+        return Math.abs(distance);
     }
 
     public ImagePoint getDistanceXY(ImagePoint point) {

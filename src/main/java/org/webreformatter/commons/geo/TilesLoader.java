@@ -42,19 +42,12 @@ public class TilesLoader {
 
         @Override
         public void begin(GeoPoint min, GeoPoint max, int zoom) {
-            TileInfo minTile = new TileInfo(min, zoom);
-            TileInfo maxTile = new TileInfo(max, zoom);
-            int xMin = minTile.getX();
-            int xMax = maxTile.getX();
-            int yMin = maxTile.getY();
-            int yMax = minTile.getY();
-            int numberXTiles = xMax - xMin + 1;
-            int numberYTiles = yMax - yMin + 1;
+            ImagePoint tileNumbers = TileInfo.getTileNumber(min, max, zoom);
             String msg = String.format(
                 "Download %d (%d x %d) tiles for zoom level %d ...",
-                numberXTiles * numberYTiles,
-                numberXTiles,
-                numberYTiles,
+                tileNumbers.getX() * tileNumbers.getY(),
+                tileNumbers.getX(),
+                tileNumbers.getY(),
                 zoom);
             println(msg);
         }
@@ -157,8 +150,8 @@ public class TilesLoader {
         ILoadListener listener) {
         GeoPoint a = min;
         GeoPoint b = max;
-        min = min(a, b);
-        max = max(a, b);
+        min = GeoPoint.min(a, b);
+        max = GeoPoint.max(a, b);
         for (int zoom = minZoom; zoom <= maxZoom; zoom++) {
             TileInfo minTile = new TileInfo(min, zoom);
             TileInfo maxTile = new TileInfo(max, zoom);
@@ -177,15 +170,4 @@ public class TilesLoader {
         }
     }
 
-    private GeoPoint max(GeoPoint a, GeoPoint b) {
-        return new GeoPoint(
-            Math.max(a.getLongitude(), b.getLongitude()),
-            Math.max(a.getLatitude(), b.getLatitude()));
-    }
-
-    private GeoPoint min(GeoPoint a, GeoPoint b) {
-        return new GeoPoint(
-            Math.min(a.getLongitude(), b.getLongitude()),
-            Math.min(a.getLatitude(), b.getLatitude()));
-    }
 }
