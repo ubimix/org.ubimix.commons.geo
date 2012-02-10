@@ -12,6 +12,8 @@ package org.webreformatter.commons.geo;
  */
 public class GeoUtils {
 
+    private static final double R = 6371 * 1000; // in meters
+
     /**
      * @param latitude the latitude to check
      * @return a valid latitude
@@ -38,6 +40,70 @@ public class GeoUtils {
             longitude = 179.9999999;
         }
         return longitude;
+    }
+
+    // http://www.movable-type.co.uk/scripts/latlong.html
+    public static double getBearing(
+        double lon1,
+        double lat1,
+        double lon2,
+        double lat2) {
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double y = Math.sin(dLon) * Math.cos(lat2);
+        double x = Math.cos(lat1)
+            * Math.sin(lat2)
+            - Math.sin(lat1)
+            * Math.cos(lat2)
+            * Math.cos(dLon);
+        double brng = Math.atan2(y, x);
+        return brng;
+    }
+
+    // http://www.movable-type.co.uk/scripts/latlong.html
+    public static double getDistance(
+        double lon1,
+        double lat1,
+        double lon2,
+        double lat2) {
+        lon1 = Math.toRadians(lon1);
+        lat1 = Math.toRadians(lat1);
+        lon2 = Math.toRadians(lon2);
+        lat2 = Math.toRadians(lat2);
+        double dLat = lat2 - lat1;
+        double dLon = lon2 - lon1;
+        double a = Math.sin(dLat / 2)
+            * Math.sin(dLat / 2)
+            + Math.sin(dLon / 2)
+            * Math.sin(dLon / 2)
+            * Math.cos(lat1)
+            * Math.cos(lat2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double d = R * c;
+        return d;
+    }
+
+    // http://www.movable-type.co.uk/scripts/latlong.html
+    public static double[] getPoint(
+        double lon1,
+        double lat1,
+        double bearing,
+        double distance) {
+        lon1 = Math.toRadians(lon1);
+        lat1 = Math.toRadians(lat1);
+        double lat2 = Math.asin(Math.sin(lat1)
+            * Math.cos(distance / R)
+            + Math.cos(lat1)
+            * Math.sin(distance / R)
+            * Math.cos(bearing));
+        double lon2 = lon1
+            + Math.atan2(
+                Math.sin(bearing) * Math.sin(distance / R) * Math.cos(lat1),
+                Math.cos(distance / R) - Math.sin(lat1) * Math.sin(lat2));
+        lon2 = Math.toDegrees(lon2);
+        lat2 = Math.toDegrees(lat2);
+        return new double[] { lon2, lat2 };
     }
 
     /**

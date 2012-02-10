@@ -44,8 +44,24 @@ public class TileInfo {
         return fX == o.fX && fY == o.fY && fZoom == o.fZoom;
     }
 
-    public GeoPoint getCoordinates() {
+    public GeoPoint getBottomLeftCoordinates() {
         return new GeoPoint(getLongitude(), getLatitude());
+    }
+
+    private double getDistance(int deltaX, int deltaY, int zoom) {
+        double lon1 = GeoUtils.getTileLongitudeByX(fX, zoom);
+        double lat1 = GeoUtils.getTileLatitudeByY(fY, zoom);
+        double lon2 = GeoUtils.getTileLongitudeByX(fX + deltaX, zoom);
+        double lat2 = GeoUtils.getTileLatitudeByY(fY + deltaY, zoom);
+        return GeoUtils.getDistance(lon1, lat1, lon2, lat2);
+    }
+
+    /**
+     * @return the width of this tile (in kilometers)
+     */
+    public double getHeight() {
+        double distance = getDistance(0, 1, fZoom);
+        return distance;
     }
 
     public double getLatitude() {
@@ -104,6 +120,20 @@ public class TileInfo {
      */
     public String getTilePath() {
         return GeoUtils.getTilePath(getLongitude(), getLatitude(), fZoom);
+    }
+
+    public GeoPoint getTopRightCoordinates() {
+        double lon = GeoUtils.getTileLongitudeByX(fX + 1, fZoom);
+        double lat = GeoUtils.getTileLatitudeByY(fY - 1, fZoom);
+        return new GeoPoint(lon, lat);
+    }
+
+    /**
+     * @return the width of this tile (in kilometers)
+     */
+    public double getWidth() {
+        double distance = getDistance(1, 0, fZoom);
+        return distance;
     }
 
     /**

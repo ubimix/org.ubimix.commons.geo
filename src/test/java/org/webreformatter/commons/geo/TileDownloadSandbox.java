@@ -14,22 +14,26 @@ public class TileDownloadSandbox {
         double distance = first.getDistance(second);
         double bearing = first.getBearing(second);
         GeoPoint calculatedPoint = first.getPoint(bearing, distance);
-        System.out.println("-----------------------------------------------");
-        System.out.println("Calculating point by bearing + distance: ");
-        System.out.println(" - First point        : " + first);
-        System.out.println(" - Distance           : " + distance + " km");
-        System.out.println(" - Bearing            : " + bearing);
-        System.out.println(" - Real second point  : " + second);
-        System.out.println(" - Calculated point   : " + calculatedPoint);
+        println("-----------------------------------------------");
+        println("Calculating point by bearing + distance: ");
+        println(" - First point        : " + first);
+        println(" - Distance           : " + distance + "km");
+        println(" - Bearing            : " + bearing);
+        println(" - Real second point  : " + second);
+        println(" - Calculated point   : " + calculatedPoint);
 
         int minZoom = 13;
         int maxZoom = 14;
-        System.out.println();
-        System.out.println("-----------------------------------------------");
-        System.out.println("Tiles download:");
+        println("");
+        println("-----------------------------------------------");
+        println("Tiles download:");
         File dir = new File("./tmp");
         DownloadListener listener = new TilesLoader.DownloadListener(dir);
         TilesLoader loader = new TilesLoader();
         loader.load(first, second, minZoom, maxZoom, listener);
+    }
+
+    protected static void println(String msg) {
+        System.out.println(msg);
     }
 }
