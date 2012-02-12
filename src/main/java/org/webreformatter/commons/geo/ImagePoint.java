@@ -6,12 +6,12 @@ package org.webreformatter.commons.geo;
 public class ImagePoint {
 
     public static ImagePoint getDistanceXY(ImagePoint first, ImagePoint second) {
-        long deltaX = Math.abs(first.getX() - second.getX());
         long deltaY = Math.abs(first.getY() - second.getY());
-        return new ImagePoint(deltaX, deltaY);
+        long deltaX = Math.abs(first.getX() - second.getX());
+        return new ImagePoint(deltaY, deltaX);
     }
 
-    public static double getImageBearing(long deltaX, long deltaY) {
+    public static double getImageBearing(long deltaY, long deltaX) {
         // double bearing = Math.atan(deltaX / deltaY);
         double bearing = Math.atan2(deltaX, deltaY);
         return bearing;
@@ -32,10 +32,10 @@ public class ImagePoint {
     private final long fY;
 
     /**
-     * @param x
      * @param y
+     * @param x
      */
-    public ImagePoint(long x, long y) {
+    public ImagePoint(long y, long x) {
         fX = x;
         fY = y;
     }
@@ -53,7 +53,7 @@ public class ImagePoint {
     }
 
     public double getBearing(ImagePoint point) {
-        double bearing = getImageBearing(point.fX - fX, point.fY - fY);
+        double bearing = getImageBearing(point.fY - fY, point.fX - fX);
         return bearing;
     }
 
@@ -70,9 +70,9 @@ public class ImagePoint {
     public ImagePoint getPoint(double bearing, double distance) {
         double h = Math.cos(bearing) * distance;
         double w = Math.sin(bearing) * distance;
-        long x = fX + Math.round(w);
         long y = fY + Math.round(h);
-        ImagePoint result = new ImagePoint(x, y);
+        long x = fX + Math.round(w);
+        ImagePoint result = new ImagePoint(y, x);
         return result;
     }
 
@@ -86,13 +86,13 @@ public class ImagePoint {
 
     @Override
     public int hashCode() {
-        int hashX = (int) (fX ^ (fX >>> 32));
         int hashY = (int) (fY ^ (fY >>> 32));
+        int hashX = (int) (fX ^ (fX >>> 32));
         return hashX ^ hashY;
     }
 
     @Override
     public String toString() {
-        return fX + ":" + fY;
+        return fY + ":" + fX;
     }
 }

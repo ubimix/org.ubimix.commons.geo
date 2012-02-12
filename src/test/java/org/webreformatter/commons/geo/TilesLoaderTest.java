@@ -39,14 +39,14 @@ public class TilesLoaderTest extends TestCase {
 
         assertEquals(tileX, GeoUtils.getTileXByLongitude(longitude, zoom));
         assertEquals(tileY, GeoUtils.getTileYByLatitude(latitude, zoom));
-        String testPath = GeoUtils.getTilePath(longitude, latitude, zoom);
+        String testPath = GeoUtils.getTilePath(latitude, longitude, zoom);
         assertEquals(zoom + "/" + tileX + "/" + tileY + ".png", testPath);
     }
 
     public void testGeoPoint() {
         double longitude = 11.01296;
         double latitude = 49.60055;
-        GeoPoint point = new GeoPoint(longitude, latitude);
+        GeoPoint point = new GeoPoint(latitude, longitude);
         assertEquals(longitude, point.getLongitude());
         assertEquals(latitude, point.getLatitude());
     }
@@ -60,7 +60,7 @@ public class TilesLoaderTest extends TestCase {
         testImagePoints(first, second);
         testImagePoints(second, first);
 
-        first = new GeoPoint(-2, 2);
+        first = new GeoPoint(2, -2);
         second = new GeoPoint(0, 0);
         testImagePoints(first, second);
         testImagePoints(second, first);
@@ -70,13 +70,13 @@ public class TilesLoaderTest extends TestCase {
         testImagePoints(first, second);
         testImagePoints(second, first);
 
-        first = new GeoPoint(2.335904, 48.863854);
-        second = new GeoPoint(2.339723, 48.866155);
+        first = new GeoPoint(48.863854, 2.335904);
+        second = new GeoPoint(48.866155, 2.339723);
         testImagePoints(first, second);
         testImagePoints(second, first);
 
-        first = new GeoPoint(10.951, 49.5611);
-        second = new GeoPoint(11.0574, 49.6282);
+        first = new GeoPoint(49.5611, 10.951);
+        second = new GeoPoint(49.6282, 11.0574);
         testImagePoints(first, second);
         testImagePoints(second, first);
     }
@@ -132,33 +132,55 @@ public class TilesLoaderTest extends TestCase {
         second = new GeoPoint(2, 2);
         testTiler(first, second, 12, scale);
 
-        first = new GeoPoint(2.335904, 48.863854);
-        second = new GeoPoint(2.339723, 48.866155);
+        first = new GeoPoint(48.863854, 2.335904);
+        second = new GeoPoint(48.866155, 2.339723);
         testTiler(first, second, 18, scale);
 
     }
 
     public void testTileInfo() {
+
         double longitude = 11.01296;
         double latitude = 49.60055;
         short zoom = 13;
         int tileX = 4346;
         int tileY = 2792;
 
-        TileInfo tile = new TileInfo(longitude, latitude, zoom);
+        TileInfo tile = new TileInfo(latitude, longitude, zoom);
+
         testTileInfo(tile, tileX, tileY, zoom);
-        assertEquals(tile, new TileInfo(tileX, tileY, zoom));
-        assertTrue(tile.in(longitude, latitude));
+        assertEquals(tile, new TileInfo(tileY, tileX, zoom));
+        assertTrue(tile.in(latitude, longitude));
 
-        TileInfo next = tile.getNextTile(1, 1);
-        GeoPoint nextPoint = next.getTopLeftCoordinates();
-        assertTrue(nextPoint.getLongitude() > longitude);
-        assertTrue(nextPoint.getLatitude() > latitude);
+        {
+            TileInfo nextTile = tile.getNextTile(1, 1);
+            GeoPoint bottomLeft = nextTile.getTopLeftCoordinates();
+            assertTrue(bottomLeft.getLongitude() > longitude);
+            assertTrue(bottomLeft.getLatitude() < latitude);
+        }
 
-        GeoPoint point = new GeoPoint(2.335904, 48.863854);
+        {
+            TileInfo nextTile = tile.getNextTile(1, 1);
+            GeoPoint bottomLeft = nextTile.getTopLeftCoordinates();
+            double bottomLeftLon = bottomLeft.getLongitude();
+            double bottomLeftLat = bottomLeft.getLatitude();
+            assertTrue(bottomLeftLon > longitude);
+            assertTrue(bottomLeftLat < latitude);
+
+            GeoPoint topRight = tile.getBottomRightCoordinates();
+            assertEquals(
+                bottomLeft.getLatitude(),
+                topRight.getLatitude(),
+                0.001);
+            assertEquals(
+                bottomLeft.getLongitude(),
+                topRight.getLongitude(),
+                0.001);
+        }
+        GeoPoint point = new GeoPoint(48.863854, 2.335904);
         TileInfo top = new TileInfo(point, zoom);
         TileInfo tile1 = top.getNextTile(3, 3);
-        TileInfo tile2 = top.getNextTile(3, 4);
+        TileInfo tile2 = top.getNextTile(4, 3);
         System.out.println(tile1 + " - " + tile2);
 
         int beginLine = 3;
@@ -168,7 +190,7 @@ public class TilesLoaderTest extends TestCase {
         Set<TileInfo> set = new HashSet<TileInfo>();
         for (int l = beginLine; l <= endLine; l++) {
             for (int c = beginCol; c <= endCol; c++) {
-                tile = top.getNextTile(c, l);
+                tile = top.getNextTile(l, c);
                 assertFalse(set.contains(tile));
                 set.add(tile);
             }
@@ -182,6 +204,24 @@ public class TilesLoaderTest extends TestCase {
         assertEquals(
             zoom + "/" + tileX + "/" + tileY + ".png",
             tile.getTilePath());
+    }
+
+    public void testTileInfo1() {
+        GeoPoint point = new GeoPoint(48.86709, 2.33535);
+        for (int zoom = 1; zoom <= 18; zoom++) {
+            TileInfo tile = new TileInfo(point, zoom);
+            assertTrue(tile.contains(point));
+
+            GeoPoint topLeft = tile.getTopLeftCoordinates();
+            GeoPoint bottomRight = tile.getBottomRightCoordinates();
+            assertTrue(topLeft.getLongitude() <= point.getLongitude());
+            assertTrue(bottomRight.getLongitude() >= point.getLongitude());
+
+            assertTrue(bottomRight.getLatitude() < topLeft.getLatitude());
+            assertTrue(topLeft.getLatitude() >= point.getLatitude());
+            assertTrue(bottomRight.getLatitude() <= point.getLatitude());
+
+        }
     }
 
     public void testTiler(
@@ -218,31 +258,33 @@ public class TilesLoaderTest extends TestCase {
             + " x "
             + tiler.getImageHeight());
 
-        TileInfo topLeftTile = tiler.getTopLeftTile(zoomLevel);
-        TileInfo bottomRightTile = tiler.getBottomRightTile(zoomLevel);
+        TileInfo bottomLeftTile = tiler.getBottomLeftTile(zoomLevel);
+        TileInfo topRightTile = tiler.getTopRightTile(zoomLevel);
 
         System.out.println("============ Geo Boxes ==============");
         System.out.println("Inbounding box: ["
-            + topLeftTile.getBottomRightCoordinates()
+            + topRightTile.getTopLeftCoordinates()
             + "] - ["
-            + bottomRightTile.getTopLeftCoordinates()
+            + bottomLeftTile.getBottomRightCoordinates()
             + "]");
         System.out.println("Outbounding box: ["
-            + topLeftTile.getTopLeftCoordinates()
+            + topRightTile.getBottomRightCoordinates()
             + "] - ["
-            + bottomRightTile.getBottomRightCoordinates()
+            + bottomLeftTile.getTopLeftCoordinates()
             + "]");
         System.out.println("============ Image Boxes ==============");
-        System.out.println("Inbounding box: ["
-            + tiler.getImagePosition(topLeftTile.getBottomRightCoordinates())
-            + "] - ["
-            + tiler.getImagePosition(bottomRightTile.getTopLeftCoordinates())
-            + "]");
+        System.out
+            .println("Inbounding box: ["
+                + tiler.getImagePosition(bottomLeftTile
+                    .getBottomRightCoordinates())
+                + "] - ["
+                + tiler.getImagePosition(topRightTile.getTopLeftCoordinates())
+                + "]");
         System.out.println("Outbounding box: ["
-            + tiler.getImagePosition(topLeftTile.getTopLeftCoordinates())
+            + tiler.getImagePosition(bottomLeftTile.getTopLeftCoordinates())
             + "] - ["
-            + tiler.getImagePosition(bottomRightTile
-                .getBottomRightCoordinates()) + "]");
+            + tiler.getImagePosition(topRightTile.getBottomRightCoordinates())
+            + "]");
         System.out.println("============ Tiles ==============");
 
         TilesLoader loader = new TilesLoader();
@@ -271,8 +313,8 @@ public class TilesLoaderTest extends TestCase {
 
     public void testTilesLoader() {
         TilesLoader loader = new TilesLoader();
-        GeoPoint first = new GeoPoint(10.951, 49.5611);
-        GeoPoint second = new GeoPoint(11.0574, 49.6282);
+        GeoPoint first = new GeoPoint(49.5611, 10.951);
+        GeoPoint second = new GeoPoint(49.6282, 11.0574);
         String[] tiles = {
             "13/4345/2791.png",
             "13/4345/2792.png",
@@ -319,6 +361,7 @@ public class TilesLoaderTest extends TestCase {
             "14/8695/5585.png",
             "14/8695/5586.png",
             "14/8695/5587.png" };
+
         final List<String> list = new ArrayList<String>();
         loader.load(first, second, 13, 14, new TilesLoader.LoadListener() {
             @Override

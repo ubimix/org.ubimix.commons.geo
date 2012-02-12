@@ -7,9 +7,8 @@ import org.webreformatter.commons.geo.TilesLoader.DownloadListener;
 public class TileDownloadSandbox {
 
     public static void main(String[] args) {
-        GeoPoint first = new GeoPoint(2.3081588745117188, 48.8872947821604);
-        // GeoPoint first = new GeoPoint(2.372704, 48.887972);
-        GeoPoint second = new GeoPoint(2.3727035522460938, 48.83670138083755);
+        GeoPoint first = new GeoPoint(48.86709, 2.33535);
+        GeoPoint second = new GeoPoint(48.86256, 2.34067);
 
         double distance = first.getDistance(second);
         double bearing = first.getBearing(second);
@@ -23,7 +22,7 @@ public class TileDownloadSandbox {
         println(" - Calculated point   : " + calculatedPoint);
 
         int minZoom = 13;
-        int maxZoom = 14;
+        int maxZoom = 17;
         println("");
         println("-----------------------------------------------");
         println("Tiles download:");

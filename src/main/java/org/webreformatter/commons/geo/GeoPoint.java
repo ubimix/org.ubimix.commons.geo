@@ -10,28 +10,28 @@ public class GeoPoint {
         double maxLon = Math.max(first.getLongitude(), second.getLongitude());
         double minLat = Math.min(first.getLatitude(), second.getLatitude());
         double maxLat = Math.max(first.getLatitude(), second.getLatitude());
-        double width = GeoUtils.getDistance(minLon, minLat, maxLon, minLat);
-        double height = GeoUtils.getDistance(minLon, minLat, minLon, maxLat);
-        return new GeoPoint(width, height);
+        double width = GeoUtils.getDistance(minLat, minLon, minLat, maxLon);
+        double height = GeoUtils.getDistance(minLat, minLon, maxLat, minLon);
+        return new GeoPoint(height, width);
     }
 
     public static GeoPoint max(GeoPoint a, GeoPoint b) {
         return new GeoPoint(
-            Math.max(a.getLongitude(), b.getLongitude()),
-            Math.max(a.getLatitude(), b.getLatitude()));
+            Math.max(a.getLatitude(), b.getLatitude()),
+            Math.max(a.getLongitude(), b.getLongitude()));
     }
 
     public static GeoPoint min(GeoPoint a, GeoPoint b) {
         return new GeoPoint(
-            Math.min(a.getLongitude(), b.getLongitude()),
-            Math.min(a.getLatitude(), b.getLatitude()));
+            Math.min(a.getLatitude(), b.getLatitude()),
+            Math.min(a.getLongitude(), b.getLongitude()));
     }
 
-    public static GeoPoint newPoint(String lon, String lat) {
+    public static GeoPoint newPoint(String lat, String lon) {
         GeoPoint result = null;
         try {
-            double a = Double.parseDouble(lon);
-            double b = Double.parseDouble(lat);
+            double a = Double.parseDouble(lat);
+            double b = Double.parseDouble(lon);
             result = new GeoPoint(a, b);
         } catch (Throwable t) {
             // Just ignore it
@@ -44,18 +44,18 @@ public class GeoPoint {
     private final double fY;
 
     /**
-     * @param longitude - longitude / "X" coordinate
      * @param latitude - latitude / "Y" coordinate
+     * @param longitude - longitude / "X" coordinate
      */
-    public GeoPoint(double longitude, double latitude) {
+    public GeoPoint(double latitude, double longitude) {
         fX = longitude;
         fY = latitude;
     }
 
     public GeoPoint checkGeoCoordinates() {
-        double lon = GeoUtils.checkLongitude(fX);
         double lat = GeoUtils.checkLatitutde(fY);
-        return new GeoPoint(lon, lat);
+        double lon = GeoUtils.checkLongitude(fX);
+        return new GeoPoint(lat, lon);
     }
 
     @Override
@@ -73,25 +73,25 @@ public class GeoPoint {
     // http://www.movable-type.co.uk/scripts/latlong.html
     public double getBearing(GeoPoint point) {
         return GeoUtils.getBearing(
-            getLongitude(),
             getLatitude(),
-            point.getLongitude(),
-            point.getLatitude());
+            getLongitude(),
+            point.getLatitude(),
+            point.getLongitude());
     }
 
     // http://www.movable-type.co.uk/scripts/latlong.html
     public double getDistance(GeoPoint point) {
         return GeoUtils.getDistance(
-            getLongitude(),
             getLatitude(),
-            point.getLongitude(),
-            point.getLatitude());
+            getLongitude(),
+            point.getLatitude(),
+            point.getLongitude());
     }
 
     public GeoPoint getDistanceXY(GeoPoint point) {
-        double deltaLon = GeoUtils.getDistance(fX, fY, point.fX, fY);
-        double deltaLat = GeoUtils.getDistance(fX, fY, fX, point.fY);
-        return new GeoPoint(deltaLon, deltaLat);
+        double deltaLon = GeoUtils.getDistance(fY, fX, fY, point.fX);
+        double deltaLat = GeoUtils.getDistance(fY, fX, point.fY, fX);
+        return new GeoPoint(deltaLat, deltaLon);
     }
 
     public double getLatitude() {
@@ -113,11 +113,11 @@ public class GeoPoint {
     // http://www.movable-type.co.uk/scripts/latlong.html
     public GeoPoint getPoint(double bearing, double distance) {
         double[] coords = GeoUtils.getPoint(
-            getLongitude(),
             getLatitude(),
+            getLongitude(),
             bearing,
             distance);
-        return new GeoPoint(coords[0], coords[1]);
+        return new GeoPoint(coords[1], coords[0]);
     }
 
     public double getX() {
@@ -130,23 +130,23 @@ public class GeoPoint {
 
     @Override
     public int hashCode() {
-        long bitsLong = Double.doubleToLongBits(fX);
-        int hashLong = (int) (bitsLong ^ (bitsLong >>> 32));
         long bitsLat = Double.doubleToLongBits(fY);
         int hashLat = (int) (bitsLat ^ (bitsLat >>> 32));
-        return hashLong ^ hashLat;
+        long bitsLong = Double.doubleToLongBits(fX);
+        int hashLong = (int) (bitsLong ^ (bitsLong >>> 32));
+        return hashLat ^ hashLong;
     }
 
     public GeoPoint setLatitudeFrom(GeoPoint point) {
-        return new GeoPoint(fX, point.fY);
+        return new GeoPoint(point.fY, fX);
     }
 
     public GeoPoint setLongitudeFrom(GeoPoint point) {
-        return new GeoPoint(point.fX, fY);
+        return new GeoPoint(fY, point.fX);
     }
 
     @Override
     public String toString() {
-        return fX + ":" + fY;
+        return fY + ";" + fX;
     }
 }

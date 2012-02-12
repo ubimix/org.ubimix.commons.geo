@@ -44,10 +44,10 @@ public class GeoUtils {
 
     // http://www.movable-type.co.uk/scripts/latlong.html
     public static double getBearing(
-        double lon1,
         double lat1,
-        double lon2,
-        double lat2) {
+        double lon1,
+        double lat2,
+        double lon2) {
         lat1 = Math.toRadians(lat1);
         lat2 = Math.toRadians(lat2);
         double dLon = Math.toRadians(lon2 - lon1);
@@ -63,10 +63,10 @@ public class GeoUtils {
 
     // http://www.movable-type.co.uk/scripts/latlong.html
     public static double getDistance(
-        double lon1,
         double lat1,
-        double lon2,
-        double lat2) {
+        double lon1,
+        double lat2,
+        double lon2) {
         lon1 = Math.toRadians(lon1);
         lat1 = Math.toRadians(lat1);
         lon2 = Math.toRadians(lon2);
@@ -86,8 +86,8 @@ public class GeoUtils {
 
     // http://www.movable-type.co.uk/scripts/latlong.html
     public static double[] getPoint(
-        double lon1,
         double lat1,
+        double lon1,
         double bearing,
         double distance) {
         lon1 = Math.toRadians(lon1);
@@ -168,14 +168,18 @@ public class GeoUtils {
     /**
      * Returns the path to the tile containing the specified geographic point.
      * 
-     * @param longitude the longitude of the point
      * @param latitude the latitude of the point
+     * @param longitude the longitude of the point
      * @param zoom the zoom level of the tile
      * @return a path of the tile containing the specified geo point
      */
-    public static String getTilePath(double longitude, double latitude, int zoom) {
+    public static String getTilePath(double latitude, double longitude, int zoom) {
         int x = getTileXByLongitude(longitude, zoom);
         int y = getTileYByLatitude(latitude, zoom);
+        return getTilePath(y, x, zoom);
+    }
+
+    public static String getTilePath(long y, long x, int zoom) {
         return zoom + "/" + x + "/" + y + ".png";
     }
 

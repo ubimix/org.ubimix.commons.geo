@@ -11,15 +11,15 @@ package org.webreformatter.commons.geo;
  */
 public class ImageTiler {
 
+    private GeoPoint fBottomLeftGeo;
+
     private double fImageScale;
 
     private ImagePoint fImageSize;
 
-    private GeoPoint fTopLeftGeo;
-
-    public ImageTiler(GeoPoint topLeft, GeoPoint bottomRight, double imageScale) {
-        GeoPoint min = GeoPoint.min(topLeft, bottomRight);
-        GeoPoint max = GeoPoint.max(topLeft, bottomRight);
+    public ImageTiler(GeoPoint bottomLeft, GeoPoint topRight, double imageScale) {
+        GeoPoint min = GeoPoint.min(bottomLeft, topRight);
+        GeoPoint max = GeoPoint.max(bottomLeft, topRight);
         fImageScale = imageScale;
         GeoPoint distance = min.getDistanceXY(max);
         double w = distance.getX() / fImageScale;
@@ -27,13 +27,13 @@ public class ImageTiler {
 
         double h = distance.getY() / fImageScale;
         long height = Math.abs(Math.round(h));
-        fImageSize = new ImagePoint(width, height);
-        fTopLeftGeo = min;
+        fImageSize = new ImagePoint(height, width);
+        fBottomLeftGeo = min;
     }
 
     public ImageTiler(GeoPoint bottomLeft, ImagePoint size, double imageScale) {
         fImageSize = size;
-        fTopLeftGeo = bottomLeft;
+        fBottomLeftGeo = bottomLeft;
         fImageScale = imageScale;
     }
 
@@ -47,11 +47,11 @@ public class ImageTiler {
         int imageWidth,
         int imageHeight,
         double imageScale) {
-        this(topLeft, new ImagePoint(imageWidth, imageHeight), imageScale);
+        this(topLeft, new ImagePoint(imageHeight, imageWidth), imageScale);
     }
 
     public ImagePoint getBottomLeft() {
-        return new ImagePoint(0, fImageSize.getY());
+        return new ImagePoint(fImageSize.getY(), 0);
     }
 
     public GeoPoint getBottomLeftPos() {
@@ -78,18 +78,18 @@ public class ImageTiler {
     }
 
     public GeoPoint getGeoPosition(ImagePoint point) {
-        ImagePoint topLeft = getTopLeft();
+        ImagePoint bottomLeft = getBottomLeft();
         double factor = 1;
-        if (point.getX() == topLeft.getX()) {
-            if (point.getY() > topLeft.getY()) {
+        if (point.getX() == bottomLeft.getX()) {
+            if (point.getY() > bottomLeft.getY()) {
                 factor = -1;
             }
         }
-        double distance = topLeft.getDistance(point);
+        double distance = bottomLeft.getDistance(point);
         distance *= fImageScale;
         distance *= factor;
-        double bearing = topLeft.getBearing(point);
-        GeoPoint geoPosition = fTopLeftGeo.getPoint(bearing, distance);
+        double bearing = bottomLeft.getBearing(point);
+        GeoPoint geoPosition = fBottomLeftGeo.getPoint(bearing, distance);
         return geoPosition;
     }
 
@@ -105,10 +105,11 @@ public class ImageTiler {
      * @return the position of the geographical point
      */
     public ImagePoint getImagePosition(GeoPoint currentPoint) {
-        double bearing = fTopLeftGeo.getBearing(currentPoint);
-        double distance = fTopLeftGeo.getDistance(currentPoint);
+        GeoPoint bottomLeft = getBottomLeftPos();
+        double bearing = bottomLeft.getBearing(currentPoint);
+        double distance = bottomLeft.getDistance(currentPoint);
         distance /= fImageScale;
-        ImagePoint imageBottomLeft = getTopLeft();
+        ImagePoint imageBottomLeft = getBottomLeft();
         ImagePoint result = imageBottomLeft.getPoint(bearing, distance);
         return result;
     }
@@ -139,7 +140,7 @@ public class ImageTiler {
     }
 
     public ImagePoint getTopRight() {
-        return new ImagePoint(fImageSize.getX(), 0);
+        return new ImagePoint(0, fImageSize.getX());
     }
 
     public GeoPoint getTopRightPos() {

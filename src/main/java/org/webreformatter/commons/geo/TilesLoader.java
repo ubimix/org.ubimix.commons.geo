@@ -46,8 +46,8 @@ public class TilesLoader {
             String msg = String.format(
                 "Download %d (%d x %d) tiles for zoom level %d ...",
                 tileNumbers.getX() * tileNumbers.getY(),
-                tileNumbers.getX(),
                 tileNumbers.getY(),
+                tileNumbers.getX(),
                 zoom);
             println(msg);
         }
@@ -148,21 +148,23 @@ public class TilesLoader {
         int minZoom,
         int maxZoom,
         ILoadListener listener) {
-        GeoPoint a = first;
-        GeoPoint b = second;
-        first = GeoPoint.min(a, b);
-        second = GeoPoint.max(a, b);
-        for (int zoom = minZoom; zoom <= maxZoom; zoom++) {
-            TileInfo minTile = new TileInfo(first, zoom);
-            TileInfo maxTile = new TileInfo(second, zoom);
+        GeoPoint min = GeoPoint.min(first, second);
+        GeoPoint max = GeoPoint.max(first, second);
+        first = new GeoPoint(max.getLatitude(), min.getLongitude());
+        second = new GeoPoint(min.getLatitude(), max.getLongitude());
+        for (int zoom = Math.min(minZoom, maxZoom); zoom <= Math.max(
+            minZoom,
+            maxZoom); zoom++) {
+            TileInfo firstTile = new TileInfo(first, zoom);
+            TileInfo secondTile = new TileInfo(second, zoom);
             listener.begin(first, second, zoom);
-            int xMin = minTile.getX();
-            int xMax = maxTile.getX();
-            int yMin = maxTile.getY();
-            int yMax = minTile.getY();
+            int yMin = firstTile.getY();
+            int yMax = secondTile.getY();
+            int xMin = firstTile.getX();
+            int xMax = secondTile.getX();
             for (int x = xMin; x <= xMax; x++) {
                 for (int y = yMin; y <= yMax; y++) {
-                    TileInfo tile = new TileInfo(x, y, zoom);
+                    TileInfo tile = new TileInfo(y, x, zoom);
                     listener.onTile(tile);
                 }
             }
