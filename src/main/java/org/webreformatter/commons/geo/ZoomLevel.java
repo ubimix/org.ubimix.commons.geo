@@ -3,6 +3,9 @@
  */
 package org.webreformatter.commons.geo;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 /**
  * <pre>
  * http://wiki.openstreetmap.org/wiki/Zoom_levels:
@@ -31,18 +34,40 @@ package org.webreformatter.commons.geo;
  * @author kotelnikov
  */
 public enum ZoomLevel {
-
     AREA(11), BUILDING(17), CITY(13), STREET(16), WIDEAREA(9), WORLD(0);
+
+    public static Comparator<ZoomLevel> COMPARATOR = new Comparator<ZoomLevel>() {
+        public int compare(ZoomLevel o1, ZoomLevel o2) {
+            return o1.getLevel() - o2.getLevel();
+        }
+    };
 
     public static ZoomLevel DEFAULT = STREET;
 
-    public static ZoomLevel[] LEVELS = {
-        WORLD,
-        WIDEAREA,
-        AREA,
-        CITY,
-        STREET,
-        BUILDING };
+    public static ZoomLevel[] LEVELS;
+
+    static {
+        LEVELS = ZoomLevel.values();
+        Arrays.sort(LEVELS, COMPARATOR);
+    }
+
+    public static int indexOf(ZoomLevel[] array, int level) {
+        int low = 0;
+        int high = array.length - 1;
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            ZoomLevel midVal = array[mid];
+            int cmp = midVal.fLevel - level;
+            if (cmp < 0) {
+                low = mid + 1;
+            } else if (cmp > 0) {
+                high = mid - 1;
+            } else {
+                return mid; // key found
+            }
+        }
+        return -(low + 1); // key not found.
+    }
 
     public static ZoomLevel max(ZoomLevel first, ZoomLevel second) {
         return first.getLevel() > second.getLevel() ? first : second;
@@ -53,22 +78,15 @@ public enum ZoomLevel {
     }
 
     public static ZoomLevel toZoomLevel(int value) {
-        return toZoomLevel(value, DEFAULT);
-    }
-
-    public static ZoomLevel toZoomLevel(int value, ZoomLevel defaultLevel) {
+        int pos = indexOf(LEVELS, value);
         ZoomLevel result = null;
-        ZoomLevel prev = WORLD;
-        for (ZoomLevel level : LEVELS) {
-            if (value >= prev.getLevel() && value <= level.getLevel()) {
-                result = level;
-                break;
+        if (pos < 0) {
+            pos = -(pos + 1);
+            if (pos > 0) {
+                pos--;
             }
-            prev = level;
         }
-        if (result == null) {
-            result = defaultLevel;
-        }
+        result = LEVELS[pos];
         return result;
     }
 
@@ -90,7 +108,7 @@ public enum ZoomLevel {
             }
             if (result == null) {
                 int value = Integer.parseInt(name);
-                result = toZoomLevel(value, defaultLevel);
+                result = toZoomLevel(value);
             }
         }
         if (result == null) {

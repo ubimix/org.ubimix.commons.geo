@@ -35,6 +35,26 @@ public class ZoomLevelTest extends TestCase {
             assertSame(level, test);
         }
 
+        ZoomLevel test = ZoomLevel.toZoomLevel(123);
+        assertSame(ZoomLevel.BUILDING, test);
+
+        test = ZoomLevel.toZoomLevel(ZoomLevel.BUILDING.getLevel() - 1);
+        assertSame(ZoomLevel.STREET, test);
+
+        test = ZoomLevel.toZoomLevel(ZoomLevel.STREET.getLevel() - 1);
+        assertSame(ZoomLevel.CITY, test);
+
+        test = ZoomLevel.toZoomLevel(ZoomLevel.CITY.getLevel() - 1);
+        assertSame(ZoomLevel.AREA, test);
+
+        test = ZoomLevel.toZoomLevel(ZoomLevel.AREA.getLevel() - 1);
+        assertSame(ZoomLevel.WIDEAREA, test);
+
+        test = ZoomLevel.toZoomLevel(ZoomLevel.WIDEAREA.getLevel() - 1);
+        assertSame(ZoomLevel.WORLD, test);
+
+        test = ZoomLevel.toZoomLevel(ZoomLevel.WORLD.getLevel() - 1);
+        assertSame(ZoomLevel.WORLD, test);
     }
 
 }
