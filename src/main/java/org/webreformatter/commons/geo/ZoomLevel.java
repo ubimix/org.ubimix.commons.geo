@@ -94,6 +94,18 @@ public enum ZoomLevel {
         return toZoomLevel(name, DEFAULT);
     }
 
+    /**
+     * Transforms the specified name of the zoom level to a real zoom level
+     * object.
+     * 
+     * @param name the name of the zoom level ("world", "widearea", "area",
+     *        "city", "street", "building"); if instead of a name this variable
+     *        contains numeric zoom levels (0-18) then this method parses the
+     *        specified value and transform to the nearest registered object.
+     * @param defaultZoomLevel the default zoom level if nothing could be found
+     *        for the given zoom level name
+     * @return a zoom level corresponding to the specified name
+     */
     public static ZoomLevel toZoomLevel(String name, ZoomLevel defaultLevel) {
         ZoomLevel result = null;
         if (name != null) {
