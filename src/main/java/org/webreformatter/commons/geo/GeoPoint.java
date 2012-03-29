@@ -1,10 +1,20 @@
 package org.webreformatter.commons.geo;
 
 /**
+ * A geographic point containing longitude/latitude values.
+ * 
  * @author kotelnikov
  */
 public class GeoPoint {
 
+    /**
+     * Calculates and returns geographic distance by X and Y coordinates.
+     * 
+     * @param first the first geo point
+     * @param second the second geo point
+     * @return distance by X and Y coordinates between the specified geographic
+     *         points
+     */
     public static GeoPoint getDistanceXY(GeoPoint first, GeoPoint second) {
         double minLon = Math.min(first.getLongitude(), second.getLongitude());
         double maxLon = Math.max(first.getLongitude(), second.getLongitude());

@@ -5,7 +5,7 @@ package org.webreformatter.commons.geo;
 
 /**
  * This is an utility class used to translate image width and heights in image
- * coordinates.
+ * geographic coordinates.
  * 
  * @author kotelnikov
  */

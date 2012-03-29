@@ -1,6 +1,8 @@
 package org.webreformatter.commons.geo;
 
 /**
+ * Instances of this type represent image points.
+ * 
  * @author kotelnikov
  */
 public class ImagePoint {

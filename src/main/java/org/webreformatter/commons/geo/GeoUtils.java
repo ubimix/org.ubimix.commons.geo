@@ -12,9 +12,16 @@ package org.webreformatter.commons.geo;
  */
 public class GeoUtils {
 
+    /**
+     * Radius of the Earth in meters
+     */
     private static final double R = 6371 * 1000; // in meters
 
     /**
+     * Checks that the specified latitude is in the range
+     * [-85.0511287798:85.0511287798]. If the specified value is out of range
+     * then this method returns the nearest possible value.
+     * 
      * @param latitude the latitude to check
      * @return a valid latitude
      */
@@ -29,6 +36,10 @@ public class GeoUtils {
     }
 
     /**
+     * Checks that the specified longitude is in the range [-180:180]. If the
+     * specified value is out of range then this method returns the nearest
+     * possible value.
+     * 
      * @param longitude the longitude to check
      * @return a valid longitude
      */
@@ -42,6 +53,15 @@ public class GeoUtils {
         return longitude;
     }
 
+    /**
+     * Calculates bearing between two points defined by their geo coordinates.
+     * 
+     * @param lat1 latitude of the first point
+     * @param lon1 longitude of the first point
+     * @param lat2 latitude of the second point
+     * @param lon2 longitude of the second point
+     * @return bearing between two points
+     */
     // http://www.movable-type.co.uk/scripts/latlong.html
     public static double getBearing(
         double lat1,
@@ -61,6 +81,16 @@ public class GeoUtils {
         return brng;
     }
 
+    /**
+     * Calculates geo distance (in meters) between two points defined by their
+     * geographical coordinates.
+     * 
+     * @param lat1 latitude of the first point
+     * @param lon1 longitude of the first point
+     * @param lat2 latitude of the second point
+     * @param lon2 longitude of the second point
+     * @return distance in meters between these points
+     */
     // http://www.movable-type.co.uk/scripts/latlong.html
     public static double getDistance(
         double lat1,
@@ -84,6 +114,16 @@ public class GeoUtils {
         return d;
     }
 
+    /**
+     * Calculates coordinates of the point B defined by coordinates of the point
+     * A, bearing and distance from A and B.
+     * 
+     * @param lat1 the latitude of the first point (point A)
+     * @param lon1 the longitude of the first point (point A)
+     * @param bearing bearing from A to B
+     * @param distance the distance from A to B
+     * @return the coordinates of the point B (longitude / latitude)
+     */
     // http://www.movable-type.co.uk/scripts/latlong.html
     public static double[] getPoint(
         double lat1,
