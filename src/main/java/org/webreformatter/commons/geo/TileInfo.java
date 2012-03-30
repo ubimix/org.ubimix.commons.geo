@@ -12,14 +12,16 @@ public class TileInfo {
         GeoPoint first,
         GeoPoint second,
         int zoom) {
-        GeoPoint min = GeoPoint.min(first, second);
-        GeoPoint max = GeoPoint.max(first, second);
-        TileInfo minTile = new TileInfo(min, zoom);
-        TileInfo maxTile = new TileInfo(max, zoom);
-        int xMin = minTile.getX();
-        int xMax = maxTile.getX();
-        int yMin = maxTile.getY();
-        int yMax = minTile.getY();
+        TileInfo minTile = new TileInfo(first, zoom);
+        TileInfo maxTile = new TileInfo(second, zoom);
+        return getTileNumber(minTile, maxTile);
+    }
+
+    public static ImagePoint getTileNumber(TileInfo minTile, TileInfo maxTile) {
+        int xMin = Math.min(minTile.getX(), maxTile.getX());
+        int xMax = Math.max(minTile.getX(), maxTile.getX());
+        int yMin = Math.min(minTile.getY(), maxTile.getY());
+        int yMax = Math.max(minTile.getY(), maxTile.getY());
         int numberXTiles = xMax - xMin + 1;
         int numberYTiles = yMax - yMin + 1;
         return new ImagePoint(numberYTiles, numberXTiles);

@@ -41,14 +41,26 @@ public class TilesLoader {
         }
 
         @Override
-        public void begin(GeoPoint min, GeoPoint max, int zoom) {
-            ImagePoint tileNumbers = TileInfo.getTileNumber(min, max, zoom);
+        public void begin(
+            TileInfo minTile,
+            TileInfo maxTile,
+            GeoPoint min,
+            GeoPoint max) {
+            ImagePoint tileNumbers = TileInfo.getTileNumber(minTile, maxTile);
             String msg = String.format(
                 "Download %d (%d x %d) tiles for zoom level %d ...",
                 tileNumbers.getX() * tileNumbers.getY(),
                 tileNumbers.getY(),
                 tileNumbers.getX(),
-                zoom);
+                minTile.getZoom());
+            println(msg);
+
+            tileNumbers = TileInfo.getTileNumber(min, max, minTile.getZoom());
+            msg = String.format(
+                "Real area contains %d (%d x %d) tiles.",
+                tileNumbers.getX() * tileNumbers.getY(),
+                tileNumbers.getY(),
+                tileNumbers.getX());
             println(msg);
         }
 
@@ -113,9 +125,13 @@ public class TilesLoader {
      */
     public interface ILoadListener {
 
-        void begin(GeoPoint min, GeoPoint max, int zoom);
+        void begin(
+            TileInfo minTile,
+            TileInfo maxTile,
+            GeoPoint min,
+            GeoPoint max);
 
-        void end(GeoPoint min, GeoPoint max, int zoom);
+        void end(TileInfo minTile, TileInfo maxTile, GeoPoint min, GeoPoint max);
 
         void onTile(TileInfo tile);
     }
@@ -125,10 +141,18 @@ public class TilesLoader {
      */
     public static class LoadListener implements ILoadListener {
 
-        public void begin(GeoPoint min, GeoPoint max, int zoom) {
+        public void begin(
+            TileInfo minTile,
+            TileInfo maxTile,
+            GeoPoint min,
+            GeoPoint max) {
         }
 
-        public void end(GeoPoint min, GeoPoint max, int zoom) {
+        public void end(
+            TileInfo minTile,
+            TileInfo maxTile,
+            GeoPoint min,
+            GeoPoint max) {
         }
 
         public void onTile(TileInfo tile) {
@@ -136,18 +160,49 @@ public class TilesLoader {
 
     }
 
+    private static int TILE_SIZE_IN_PIXELS = 256;
+
+    private GeoPoint fFirst;
+
+    private int fScreenAreaHeight;
+
+    private int fScreenAreaWidth;
+
+    private GeoPoint fSecond;
+
     /**
-     * 
+     * @param first
+     * @param second
      */
-    public TilesLoader() {
+    public TilesLoader(GeoPoint first, GeoPoint second) {
+        this(first, second, -1, -1);
     }
 
-    public void load(
+    /**
+     * @param first
+     * @param second
+     * @param screenAreaWidth
+     * @param screenAreaHeight
+     */
+    public TilesLoader(
         GeoPoint first,
         GeoPoint second,
-        int minZoom,
-        int maxZoom,
-        ILoadListener listener) {
+        int screenAreaWidth,
+        int screenAreaHeight) {
+        fFirst = first;
+        fSecond = second;
+        fScreenAreaWidth = screenAreaWidth;
+        fScreenAreaHeight = screenAreaHeight;
+    }
+
+    private int getTilesNumber(int w) {
+        int num = (TILE_SIZE_IN_PIXELS - 1 + w) / TILE_SIZE_IN_PIXELS;
+        return num;
+    }
+
+    public void load(int minZoom, int maxZoom, ILoadListener listener) {
+        GeoPoint first = fFirst;
+        GeoPoint second = fSecond;
         GeoPoint min = GeoPoint.min(first, second);
         GeoPoint max = GeoPoint.max(first, second);
         first = new GeoPoint(max.getLatitude(), min.getLongitude());
@@ -157,28 +212,44 @@ public class TilesLoader {
             maxZoom); zoom++) {
             TileInfo firstTile = new TileInfo(first, zoom);
             TileInfo secondTile = new TileInfo(second, zoom);
-            listener.begin(first, second, zoom);
+
             int yMin = firstTile.getY();
             int yMax = secondTile.getY();
             int xMin = firstTile.getX();
             int xMax = secondTile.getX();
+            int deltaX = Math.max(fScreenAreaWidth
+                - (xMax - xMin)
+                * TILE_SIZE_IN_PIXELS, 0);
+            int deltaY = Math.max(fScreenAreaHeight
+                - (yMax - yMin)
+                * TILE_SIZE_IN_PIXELS, 0);
+            if (deltaX > 0 || deltaY > 0) {
+                int dX = getTilesNumber((deltaX + 1) / 2);
+                int dY = getTilesNumber((deltaY + 1) / 2);
+                firstTile = firstTile.getNextTile(-dY, -dX);
+                secondTile = secondTile.getNextTile(dY, dX);
+                yMin = firstTile.getY();
+                yMax = secondTile.getY();
+                xMin = firstTile.getX();
+                xMax = secondTile.getX();
+            }
+
+            listener.begin(firstTile, secondTile, first, second);
             for (int x = xMin; x <= xMax; x++) {
                 for (int y = yMin; y <= yMax; y++) {
                     TileInfo tile = new TileInfo(y, x, zoom);
                     listener.onTile(tile);
                 }
             }
-            listener.end(first, second, zoom);
+            listener.end(firstTile, secondTile, first, second);
         }
     }
 
     public void load(
-        GeoPoint first,
-        GeoPoint second,
         ZoomLevel minZoom,
         ZoomLevel maxZoom,
         ILoadListener listener) {
-        load(first, second, minZoom.getLevel(), maxZoom.getLevel(), listener);
+        load(minZoom.getLevel(), maxZoom.getLevel(), listener);
     }
 
 }
