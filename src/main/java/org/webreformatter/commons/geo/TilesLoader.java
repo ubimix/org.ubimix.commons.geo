@@ -170,12 +170,16 @@ public class TilesLoader {
 
     private GeoPoint fSecond;
 
+    private int fZoomMax;
+
+    private int fZoomMin;
+
     /**
      * @param first
      * @param second
      */
-    public TilesLoader(GeoPoint first, GeoPoint second) {
-        this(first, second, -1, -1);
+    public TilesLoader(GeoPoint first, GeoPoint second, int minZoom, int maxZoom) {
+        this(first, second, minZoom, maxZoom, -1, -1);
     }
 
     /**
@@ -187,8 +191,12 @@ public class TilesLoader {
     public TilesLoader(
         GeoPoint first,
         GeoPoint second,
+        int minZoom,
+        int maxZoom,
         int screenAreaWidth,
         int screenAreaHeight) {
+        fZoomMin = minZoom;
+        fZoomMax = maxZoom;
         fFirst = first;
         fSecond = second;
         fScreenAreaWidth = screenAreaWidth;
@@ -200,16 +208,16 @@ public class TilesLoader {
         return num;
     }
 
-    public void load(int minZoom, int maxZoom, ILoadListener listener) {
+    public void load(ILoadListener listener) {
         GeoPoint first = fFirst;
         GeoPoint second = fSecond;
         GeoPoint min = GeoPoint.min(first, second);
         GeoPoint max = GeoPoint.max(first, second);
         first = new GeoPoint(max.getLatitude(), min.getLongitude());
         second = new GeoPoint(min.getLatitude(), max.getLongitude());
-        for (int zoom = Math.min(minZoom, maxZoom); zoom <= Math.max(
-            minZoom,
-            maxZoom); zoom++) {
+        for (int zoom = Math.min(fZoomMin, fZoomMax); zoom <= Math.max(
+            fZoomMin,
+            fZoomMax); zoom++) {
             TileInfo firstTile = new TileInfo(first, zoom);
             TileInfo secondTile = new TileInfo(second, zoom);
 
@@ -245,11 +253,21 @@ public class TilesLoader {
         }
     }
 
+    @Deprecated
+    public void load(int minZoom, int maxZoom, ILoadListener listener) {
+        fZoomMin = minZoom;
+        fZoomMax = maxZoom;
+        load(listener);
+    }
+
+    @Deprecated
     public void load(
         ZoomLevel minZoom,
         ZoomLevel maxZoom,
         ILoadListener listener) {
-        load(minZoom.getLevel(), maxZoom.getLevel(), listener);
+        fZoomMax = minZoom.getLevel();
+        fZoomMax = maxZoom.getLevel();
+        load(listener);
     }
 
 }

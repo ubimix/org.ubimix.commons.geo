@@ -4,97 +4,144 @@
 package org.webreformatter.commons.geo;
 
 /**
- * This is an utility class used to translate image width and heights in image
- * geographic coordinates.
+ * This is an utility class used to transform an image in a set of geographic
+ * tiles.
  * 
  * @author kotelnikov
  */
 public class ImageTiler {
 
-    private GeoPoint fBottomLeftGeo;
+    /**
+     * Default tile size.
+     */
+    public static int DEFAULT_TILE_SIZE = 256;
 
-    private double fImageScale;
+    /**
+     * The tile containing the top left corner of the image.
+     */
+    private TileInfo fFirstTile;
 
-    private ImagePoint fImageSize;
+    /**
+     * Image position of the tile containing the top left corner of the image.
+     * This position could have negative X and/or Y coordinates in the case when
+     * tiles are not aligned to image corners.
+     */
+    private ImagePoint fFirstTilePosition;
 
-    public ImageTiler(GeoPoint bottomLeft, GeoPoint topRight, double imageScale) {
-        GeoPoint min = GeoPoint.min(bottomLeft, topRight);
-        GeoPoint max = GeoPoint.max(bottomLeft, topRight);
-        fImageScale = imageScale;
-        GeoPoint distance = min.getDistanceXY(max);
-        double w = distance.getX() / fImageScale;
-        long width = Math.abs(Math.round(w));
+    /**
+     * The "scale" of the image - how much meters are in one pixel. This is a
+     * calculated value.
+     */
+    private double fImageScale = 0;
 
-        double h = distance.getY() / fImageScale;
-        long height = Math.abs(Math.round(h));
-        fImageSize = new ImagePoint(height, width);
-        fBottomLeftGeo = min;
-    }
+    /**
+     * "Pin point" on the image corresponding to a specific geographic
+     * coordinate.
+     */
+    private final ImagePoint fPinPoint;
 
-    public ImageTiler(GeoPoint bottomLeft, ImagePoint size, double imageScale) {
-        fImageSize = size;
-        fBottomLeftGeo = bottomLeft;
-        fImageScale = imageScale;
+    /**
+     * Geographic coordinates of a "pin point" on the image.
+     */
+    private final GeoPoint fPinPointGeo;
+
+    /**
+     * The size (in pixels) of an individual tile.
+     */
+    private final int fTileSize;
+
+    /**
+     * Zoom level of the image. Possible values are 1..18.
+     */
+    private final int fZoomLevel;
+
+    /**
+     * This constructor is used to define a pin point on the image with the
+     * corresponding geographic position. This constructor defines the default
+     * size of image tiles - 256x256.
+     * 
+     * @param pinPointGeo the geographic position of the pin point on the image
+     * @param pinPoint position of the pin point on the image
+     * @param zoomLevel the zoom level
+     */
+    public ImageTiler(GeoPoint pinPointGeo, ImagePoint pinPoint, int zoomLevel) {
+        this(DEFAULT_TILE_SIZE, pinPointGeo, pinPoint, zoomLevel);
     }
 
     /**
-     * @param imageWidth the width of the image
-     * @param imageHeight the height of the image
-     * @param imageScale meters in one image pixel
+     * This constructor is used to define tiles aligned to the corner of the
+     * image.
+     * 
+     * @param zoomLevel the zoom level
+     */
+    public ImageTiler(int zoomLevel) {
+        this(new GeoPoint(0, 0), new ImagePoint(0, 0), zoomLevel);
+    }
+
+    /**
+     * This constructor is used to define a pin point on the image, the
+     * corresponding geographic position, zoom level of the image and the tile
+     * of individual tiles.
+     * 
+     * @param tileSize size of tiles
+     * @param pinPointGeo geographic position of the pin point on the image
+     * @param pinPoint position of the pin point on the image
+     * @param zoomLevel image zoom level
      */
     public ImageTiler(
-        GeoPoint topLeft,
-        int imageWidth,
-        int imageHeight,
-        double imageScale) {
-        this(topLeft, new ImagePoint(imageHeight, imageWidth), imageScale);
+        int tileSize,
+        GeoPoint pinPointGeo,
+        ImagePoint pinPoint,
+        int zoomLevel) {
+        fPinPoint = pinPoint;
+        fPinPointGeo = pinPointGeo;
+        fZoomLevel = zoomLevel;
+        fTileSize = tileSize;
     }
 
-    public ImagePoint getBottomLeft() {
-        return new ImagePoint(fImageSize.getY(), 0);
-    }
-
-    public GeoPoint getBottomLeftPos() {
-        ImagePoint point = getBottomLeft();
-        GeoPoint geoPos = getGeoPosition(point);
-        return geoPos;
-    }
-
-    public TileInfo getBottomLeftTile(int zoomLevel) {
-        return new TileInfo(getBottomLeftPos(), zoomLevel);
-    }
-
-    public ImagePoint getBottomRight() {
-        return fImageSize;
-    }
-
-    public GeoPoint getBottomRightPos() {
-        ImagePoint point = getBottomRight();
-        return getGeoPosition(point);
-    }
-
-    public TileInfo getBottomRightTile(int zoomLevel) {
-        return new TileInfo(getBottomRightPos(), zoomLevel);
-    }
-
-    public GeoPoint getGeoPosition(ImagePoint point) {
-        ImagePoint bottomLeft = getBottomLeft();
-        double factor = 1;
-        if (point.getX() == bottomLeft.getX()) {
-            if (point.getY() > bottomLeft.getY()) {
-                factor = -1;
-            }
+    /**
+     * Returns the tile containing the start point of the image.
+     * 
+     * @return the tile containing the start point of the image
+     */
+    public TileInfo getFirstTile() {
+        if (fFirstTile == null) {
+            ImagePoint startPoint = new ImagePoint(0, 0);
+            fFirstTile = getTile(startPoint);
         }
-        double distance = bottomLeft.getDistance(point);
-        distance *= fImageScale;
-        distance *= factor;
-        double bearing = bottomLeft.getBearing(point);
-        GeoPoint geoPosition = fBottomLeftGeo.getPoint(bearing, distance);
-        return geoPosition;
+        return fFirstTile;
     }
 
-    public long getImageHeight() {
-        return fImageSize.getY();
+    /**
+     * Returns position of the first tile on the image. Note that the returned
+     * position could have negative X and/or Y coordinates in the case when
+     * tiles are not aligned to the image corners.
+     * 
+     * @return position of the first tile on the image
+     */
+    public ImagePoint getFirstTilePosition() {
+        if (fFirstTilePosition == null) {
+            TileInfo tile = getFirstTile();
+            GeoPoint topLeftGeo = tile.getTopLeftCoordinates();
+            fFirstTilePosition = getImagePosition(topLeftGeo);
+        }
+        return fFirstTilePosition;
+    }
+
+    /**
+     * Returns a geographic position of the specified point on the image
+     * 
+     * @param point the point on the image
+     * @return the geographic position corresponding to the specified point on
+     *         the image
+     */
+    public GeoPoint getGeoPosition(ImagePoint point) {
+        double distance = fPinPoint.getDistance(point);
+        double d = Math.sqrt(Math.pow(fTileSize, 2) + Math.pow(fTileSize, 2));
+        distance = (distance * getImageScale()) / d;
+        double bearing = fPinPoint.getBearing(point);
+        GeoPoint geoPosition = fPinPointGeo.getPoint(bearing, distance);
+        return geoPosition;
     }
 
     /**
@@ -105,51 +152,111 @@ public class ImageTiler {
      * @return the position of the geographical point
      */
     public ImagePoint getImagePosition(GeoPoint currentPoint) {
-        GeoPoint bottomLeft = getBottomLeftPos();
-        double bearing = bottomLeft.getBearing(currentPoint);
-        double distance = bottomLeft.getDistance(currentPoint);
-        distance /= fImageScale;
-        ImagePoint imageBottomLeft = getBottomLeft();
-        ImagePoint result = imageBottomLeft.getPoint(bearing, distance);
+        double bearing = fPinPointGeo.getBearing(currentPoint);
+        double distance = fPinPointGeo.getDistance(currentPoint);
+        double d = Math.sqrt(Math.pow(fTileSize, 2) + Math.pow(fTileSize, 2));
+        distance = (distance * d) / getImageScale();
+        ImagePoint result = fPinPoint.getPoint(bearing, distance);
         return result;
     }
 
-    public double getImageScale() {
+    /**
+     * Returns the scale of the image - how much meters are in one image pixel.
+     * 
+     * @return the scale of the image - how much meters are in one image pixel
+     */
+    private double getImageScale() {
+        if (fImageScale == 0) {
+            TileInfo tile = new TileInfo(fPinPointGeo, fZoomLevel);
+            GeoPoint bottomRight = tile.getBottomRightCoordinates();
+            GeoPoint topLeft = tile.getTopLeftCoordinates();
+            fImageScale = bottomRight.getDistance(topLeft);
+        }
         return fImageScale;
     }
 
-    public ImagePoint getImageSize() {
-        return fImageSize;
+    /**
+     * This method translates a position on the image to the tile.
+     * 
+     * @param point a point on the image
+     * @return the tile containing this point
+     */
+    public TileInfo getTile(ImagePoint point) {
+        GeoPoint startGeoPoint = getGeoPosition(point);
+        TileInfo firstTile = new TileInfo(startGeoPoint, fZoomLevel);
+        return firstTile;
     }
 
-    public long getImageWidth() {
-        return fImageSize.getX();
+    /**
+     * Returns position of the specified tile on the image. Note that the
+     * returned position could have negative X and/or Y coordinates in the case
+     * when tiles are not aligned to the image corners.
+     * 
+     * @param tile the image tile
+     * @return the position of the beginning of the tile
+     */
+    public ImagePoint getTilePosition(TileInfo tile) {
+        TileInfo firstTile = getFirstTile();
+        ImagePoint firstTilePosition = getFirstTilePosition();
+        long y = firstTilePosition.getY()
+            + (tile.getY() - firstTile.getY())
+            * fTileSize;
+        long x = firstTilePosition.getX()
+            + (tile.getX() - firstTile.getX())
+            * fTileSize;
+        ImagePoint result = new ImagePoint(y, x);
+        return result;
     }
 
-    public ImagePoint getTopLeft() {
-        return new ImagePoint(0, 0);
+    /**
+     * Returns the size of tiles in pixels.
+     * 
+     * @return the size of tiles
+     */
+    public long getTileSize() {
+        return fTileSize;
     }
 
-    public GeoPoint getTopLeftPos() {
-        ImagePoint point = getTopLeft();
-        return getGeoPosition(point);
+    /**
+     * Returns an {@link TilesLoader} object iterating over all tiles covering
+     * an image of the specified size.
+     * 
+     * @param imageSize the size of the image
+     * @return an {@link TilesLoader} object iterating over all tiles covering
+     *         an image of the specified size
+     */
+    public TilesLoader getTilesLoader(ImagePoint imageSize) {
+        return getTilesLoader(imageSize, null);
     }
 
-    public TileInfo getTopLeftTile(int zoomLevel) {
-        return new TileInfo(getTopLeftPos(), zoomLevel);
+    /**
+     * Returns an {@link TilesLoader} object iterating over all tiles covering
+     * an image of the specified size.
+     * 
+     * @param imageSize the size of the image
+     * @param screenSize the size of the screen
+     * @return an {@link TilesLoader} object iterating over all tiles covering
+     *         an image of the specified size
+     */
+    public TilesLoader getTilesLoader(
+        ImagePoint imageSize,
+        ImagePoint screenSize) {
+        TileInfo firstTile = getFirstTile();
+        TileInfo lastTile = getTile(imageSize);
+        GeoPoint topLeftGeo = firstTile.getTopLeftCoordinates();
+        GeoPoint bottomRightGeo = lastTile.getTopLeftCoordinates();
+        TilesLoader loader = screenSize != null ? new TilesLoader(
+            topLeftGeo,
+            bottomRightGeo,
+            fZoomLevel,
+            fZoomLevel,
+            (int) screenSize.getX(),
+            (int) screenSize.getY()) : new TilesLoader(
+            topLeftGeo,
+            bottomRightGeo,
+            fZoomLevel,
+            fZoomLevel);
+        return loader;
     }
 
-    public ImagePoint getTopRight() {
-        return new ImagePoint(0, fImageSize.getX());
-    }
-
-    public GeoPoint getTopRightPos() {
-        ImagePoint point = getTopRight();
-        GeoPoint geoPos = getGeoPosition(point);
-        return geoPos;
-    }
-
-    public TileInfo getTopRightTile(int zoomLevel) {
-        return new TileInfo(getTopRightPos(), zoomLevel);
-    }
 }

@@ -117,6 +117,14 @@ public class TileInfo {
         return GeoUtils.getTilePath(fY, fX, fZoom);
     }
 
+    /**
+     * @param zoom the zoom level
+     * @return the path to the tile containing this point
+     */
+    public String getTilePath(String fileExt) {
+        return GeoUtils.getTilePath(fY, fX, fZoom, fileExt);
+    }
+
     public GeoPoint getTopLeftCoordinates() {
         double lat = GeoUtils.getTileLatitudeByY(incY(0), fZoom);
         double lon = GeoUtils.getTileLongitudeByX(incX(0), fZoom);

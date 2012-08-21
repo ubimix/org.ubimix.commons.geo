@@ -220,7 +220,11 @@ public class GeoUtils {
     }
 
     public static String getTilePath(long y, long x, int zoom) {
-        return zoom + "/" + x + "/" + y + ".png";
+        return getTilePath(y, x, zoom, "png");
+    }
+
+    public static String getTilePath(long y, long x, int zoom, String ext) {
+        return zoom + "/" + x + "/" + y + "." + ext;
     }
 
     /**

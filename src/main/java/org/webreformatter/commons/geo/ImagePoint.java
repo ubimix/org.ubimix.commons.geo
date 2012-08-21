@@ -55,7 +55,7 @@ public class ImagePoint {
     }
 
     public double getBearing(ImagePoint point) {
-        double bearing = getImageBearing(point.fY - fY, point.fX - fX);
+        double bearing = getImageBearing(fY - point.fY, point.fX - fX);
         return bearing;
     }
 
@@ -70,7 +70,7 @@ public class ImagePoint {
     }
 
     public ImagePoint getPoint(double bearing, double distance) {
-        double h = Math.cos(bearing) * distance;
+        double h = Math.cos(bearing) * -distance;
         double w = Math.sin(bearing) * distance;
         long y = fY + Math.round(h);
         long x = fX + Math.round(w);

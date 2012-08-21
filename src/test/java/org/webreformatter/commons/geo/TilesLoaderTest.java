@@ -123,6 +123,14 @@ public class TilesLoaderTest extends TestCase {
         assertEquals(imageFirst.getY(), imageTest.getY(), errorLat);
     }
 
+    public void testTileCoordinates() {
+        GeoPoint first = new GeoPoint(49.5611, 10.951);
+        TileInfo tile = new TileInfo(first, 18);
+        System.out.println("TopLeft: " + tile.getTopLeftCoordinates());
+        System.out.println("BottomRight: " + tile.getBottomRightCoordinates());
+
+    }
+
     public void testTileInfo() {
 
         double longitude = 11.01296;
@@ -259,8 +267,8 @@ public class TilesLoaderTest extends TestCase {
             "14/8695/5587.png" };
 
         final List<String> list = new ArrayList<String>();
-        TilesLoader loader = new TilesLoader(first, second);
-        loader.load(13, 14, new TilesLoader.LoadListener() {
+        TilesLoader loader = new TilesLoader(first, second, 13, 14);
+        loader.load(new TilesLoader.LoadListener() {
             @Override
             public void onTile(TileInfo tile) {
                 list.add(tile.getTilePath());
