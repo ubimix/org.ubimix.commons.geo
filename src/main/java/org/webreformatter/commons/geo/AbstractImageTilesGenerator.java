@@ -3,10 +3,99 @@
  */
 package org.webreformatter.commons.geo;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author kotelnikov
  */
 public abstract class AbstractImageTilesGenerator {
+
+    public static class TilesStat {
+
+        private GeoPoint fBottomRightGeo;
+
+        private int fMaxZoomLevel;
+
+        private int fMinZoomLevel;
+
+        private GeoPoint fTopLeftGeo;
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof TilesStat)) {
+                return false;
+            }
+            TilesStat o = (TilesStat) obj;
+            return toString().equals(o.toString());
+        }
+
+        public GeoPoint getBottomRightGeo() {
+            return fBottomRightGeo;
+        }
+
+        public int getMaxZoomLevel() {
+            return fMaxZoomLevel;
+        }
+
+        public int getMinZoomLevel() {
+            return fMinZoomLevel;
+        }
+
+        public GeoPoint getTopLeftGeo() {
+            return fTopLeftGeo;
+        }
+
+        @Override
+        public int hashCode() {
+            return toString().hashCode();
+        }
+
+        public TilesStat setBottomRightGeo(GeoPoint bottomRightGeo) {
+            fBottomRightGeo = bottomRightGeo;
+            return this;
+        }
+
+        public TilesStat setMaxZoomLevel(int maxZoomLevel) {
+            fMaxZoomLevel = maxZoomLevel;
+            return this;
+        }
+
+        public TilesStat setMinZoomLevel(int minZoomLevel) {
+            fMinZoomLevel = minZoomLevel;
+            return this;
+        }
+
+        public TilesStat setTopLeftGeo(GeoPoint topLeftGeo) {
+            fTopLeftGeo = topLeftGeo;
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder buf = new StringBuilder();
+            buf.append("{\n");
+            buf.append("  \"minZoom\" : " + fMinZoomLevel + ",\n");
+            buf.append("  \"maxZoom\" : " + fMaxZoomLevel + ",\n");
+            buf.append("  \"area\" : [["
+                + fTopLeftGeo.getLatitude()
+                + ","
+                + fTopLeftGeo.getLongitude()
+                + "],["
+                + fBottomRightGeo.getLatitude()
+                + ","
+                + fBottomRightGeo.getLongitude()
+                + "]]\n");
+            buf.append("}");
+            return buf.toString();
+        }
+
+    }
+
+    private Map<Integer, ImageTiler> fImageTilers = new HashMap<Integer, ImageTiler>();
 
     private int fImageZoomLevel;
 
@@ -24,6 +113,10 @@ public abstract class AbstractImageTilesGenerator {
     public AbstractImageTilesGenerator() {
     }
 
+    protected void clear() {
+        fImageTilers.clear();
+    }
+
     protected abstract void copyTile(
         TileInfo tile,
         int sourceTileSize,
@@ -33,11 +126,11 @@ public abstract class AbstractImageTilesGenerator {
         ImagePoint targetLeftTop,
         ImagePoint targetBottomRight);
 
-    protected void generateTiles(ImagePoint imageSize) {
-        generateTiles(getImageZoomLevel(), imageSize);
+    protected TilesStat generateTiles(ImagePoint imageSize) {
+        return generateTiles(getImageZoomLevel(), imageSize);
     }
 
-    protected void generateTiles(int maxZoomLevel, ImagePoint imageSize) {
+    protected TilesStat generateTiles(int maxZoomLevel, ImagePoint imageSize) {
         int minZoomLevel = maxZoomLevel;
         ImagePoint screenSize = getScreenSize();
         if (screenSize != null) {
@@ -52,24 +145,23 @@ public abstract class AbstractImageTilesGenerator {
                 minZoomLevel = zoom;
             }
         }
-        generateTiles(minZoomLevel, maxZoomLevel, imageSize);
+        return generateTiles(minZoomLevel, maxZoomLevel, imageSize);
     }
 
-    protected void generateTiles(
+    protected TilesStat generateTiles(
         int minZoomLevel,
         int maxZoomLevel,
         final ImagePoint imageSize) {
-        int maxLevel = Math.max(
-            Math.max(fImageZoomLevel, minZoomLevel),
-            maxZoomLevel);
+        TilesStat stat = new TilesStat();
+        stat.setMinZoomLevel(minZoomLevel).setMaxZoomLevel(maxZoomLevel);
+        final ImageTiler maxTiler = getImageTiler(maxZoomLevel);
+        GeoPoint topLeftGeo = maxTiler.getGeoPosition(new ImagePoint(0, 0));
+        stat.setTopLeftGeo(topLeftGeo);
+        GeoPoint bottomRightGeo = maxTiler.getGeoPosition(imageSize);
+        stat.setBottomRightGeo(bottomRightGeo);
         for (int zoomLevel = minZoomLevel; zoomLevel <= maxZoomLevel; zoomLevel++) {
-            final int scale = 1 << (maxLevel - zoomLevel);
-            int sourceTileSize = fTileSize * scale;
-            final ImageTiler tiler = new ImageTiler(
-                sourceTileSize,
-                fPinPointGeo,
-                fPinPoint,
-                zoomLevel);
+            final ImageTiler tiler = getImageTiler(zoomLevel);
+            final double scale = getImageBlockScale(zoomLevel);
             TilesLoader loader = tiler.getTilesLoader(imageSize, fScreenSize);
             loader.load(new TilesLoader.LoadListener() {
                 @Override
@@ -82,11 +174,11 @@ public abstract class AbstractImageTilesGenerator {
                     long targetX = 0;
                     long targetY = 0;
                     if (sourceX < 0) {
-                        targetX = -sourceX / scale;
+                        targetX = (long) (-sourceX / scale);
                         sourceX = 0;
                     }
                     if (sourceY < 0) {
-                        targetY = -sourceY / scale;
+                        targetY = (long) (-sourceY / scale);
                         sourceY = 0;
                     }
                     long sourceWidth = (int) Math.min(
@@ -95,10 +187,12 @@ public abstract class AbstractImageTilesGenerator {
                     long sourceHeight = (int) Math.min(
                         imageSize.getY() - sourceY,
                         Math.min(sourceTileSize, imageSize.getY() - sourceY));
-                    long targetWidth = Math.min(targetTileSize, sourceWidth
-                        / scale);
-                    long targetHeight = Math.min(targetTileSize, sourceHeight
-                        / scale);
+                    long targetWidth = (long) Math.min(
+                        targetTileSize,
+                        sourceWidth / scale);
+                    long targetHeight = (long) Math.min(
+                        targetTileSize,
+                        sourceHeight / scale);
 
                     ImagePoint targetLeftTop = new ImagePoint(targetY, targetX);
                     ImagePoint targetBottomRight = new ImagePoint(targetY
@@ -117,6 +211,34 @@ public abstract class AbstractImageTilesGenerator {
                 }
             });
         }
+        return stat;
+    }
+
+    /**
+     * @param zoomLevel
+     * @return
+     */
+    protected double getImageBlockScale(int zoomLevel) {
+        double result = 1 << Math.abs(fImageZoomLevel - zoomLevel);
+        if (fImageZoomLevel < zoomLevel) {
+            result = 1 / result;
+        }
+        return result;
+    }
+
+    public ImageTiler getImageTiler(int zoomLevel) {
+        ImageTiler tiler = fImageTilers.get(zoomLevel);
+        if (tiler == null) {
+            double scale = getImageBlockScale(zoomLevel);
+            int sourceTileSize = (int) (fTileSize * scale);
+            tiler = new ImageTiler(
+                sourceTileSize,
+                fPinPointGeo,
+                fPinPoint,
+                zoomLevel);
+            fImageTilers.put(zoomLevel, tiler);
+        }
+        return tiler;
     }
 
     public int getImageZoomLevel() {
@@ -141,21 +263,26 @@ public abstract class AbstractImageTilesGenerator {
 
     public void setImageZoomLevel(int imageZoomLevel) {
         fImageZoomLevel = imageZoomLevel;
+        clear();
     }
 
     public void setPinPoint(ImagePoint pinPoint) {
-        fPinPoint = pinPoint;
+        fPinPoint = pinPoint != null ? pinPoint : new ImagePoint(0, 0);
+        clear();
     }
 
     public void setPinPointGeo(GeoPoint pinPointGeo) {
-        fPinPointGeo = pinPointGeo;
+        fPinPointGeo = pinPointGeo != null ? pinPointGeo : new GeoPoint(0, 0);
+        clear();
     }
 
     public void setScreenSize(ImagePoint screenSize) {
         fScreenSize = screenSize;
+        clear();
     }
 
     public void setTileSize(int tileSize) {
         fTileSize = tileSize;
+        clear();
     }
 }

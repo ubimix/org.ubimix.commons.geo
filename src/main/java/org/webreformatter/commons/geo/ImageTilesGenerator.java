@@ -15,9 +15,13 @@ import java.awt.image.ImageFilter;
 import java.awt.image.ImageObserver;
 import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
@@ -26,6 +30,47 @@ import javax.imageio.stream.ImageInputStream;
  * @author kotelnikov
  */
 public class ImageTilesGenerator extends AbstractImageTilesGenerator {
+
+    public static class FileTileWriter implements ITileImageListener {
+
+        private final static Logger log = Logger.getLogger(FileTileWriter.class
+            .getName());
+
+        private File fRootDir;
+
+        public FileTileWriter(File rootDir) {
+            fRootDir = rootDir;
+        }
+
+        protected void handleError(String msg, Throwable t) {
+            log.log(Level.WARNING, msg, t);
+        }
+
+        @Override
+        public void onTile(
+            TileInfo tile,
+            BufferedImage tileImage,
+            TileFormat tileFormat) {
+            String type = tileFormat.toString();
+            String path = tile.getTilePath(type);
+            File tileFile = new File(fRootDir, path);
+            tileFile.getParentFile().mkdirs();
+            try {
+                FileOutputStream out = new FileOutputStream(tileFile);
+                try {
+                    ImageIO.write(tileImage, type, out);
+                } finally {
+                    out.close();
+                }
+            } catch (Throwable t) {
+                handleError("Can not write tite '"
+                    + tile
+                    + "' in the file '"
+                    + tileFile
+                    + "'.", t);
+            }
+        }
+    }
 
     public interface ITileImageListener {
 
@@ -127,27 +172,13 @@ public class ImageTilesGenerator extends AbstractImageTilesGenerator {
         fListener.onTile(tile, tileImage, fTileFormat);
     }
 
-    public void generateTiles(
+    public TilesStat generateTiles(
         int minZoomLevel,
         int maxZoomLevel,
         final ITileImageListener listener) {
         fListener = listener;
         try {
-            generateTiles(
-                minZoomLevel,
-                maxZoomLevel,
-                new ImagePoint(fImage.getHeight(), fImage.getWidth()));
-        } finally {
-            fListener = null;
-        }
-    }
-
-    public void generateTiles(
-        int maxZoomLevel,
-        final ITileImageListener listener) {
-        fListener = listener;
-        try {
-            generateTiles(maxZoomLevel, new ImagePoint(
+            return generateTiles(minZoomLevel, maxZoomLevel, new ImagePoint(
                 fImage.getHeight(),
                 fImage.getWidth()));
         } finally {
@@ -155,10 +186,25 @@ public class ImageTilesGenerator extends AbstractImageTilesGenerator {
         }
     }
 
-    public void generateTiles(final ITileImageListener listener) {
+    public TilesStat generateTiles(
+        int maxZoomLevel,
+        final ITileImageListener listener) {
         fListener = listener;
         try {
-            generateTiles(new ImagePoint(fImage.getHeight(), fImage.getWidth()));
+            return generateTiles(
+                maxZoomLevel,
+                new ImagePoint(fImage.getHeight(), fImage.getWidth()));
+        } finally {
+            fListener = null;
+        }
+    }
+
+    public TilesStat generateTiles(final ITileImageListener listener) {
+        fListener = listener;
+        try {
+            return generateTiles(new ImagePoint(
+                fImage.getHeight(),
+                fImage.getWidth()));
         } finally {
             fListener = null;
         }
@@ -197,6 +243,9 @@ public class ImageTilesGenerator extends AbstractImageTilesGenerator {
 
     private BufferedImage newEmptyTile() {
         int imageType = BufferedImage.TYPE_INT_ARGB;
+        if (fTileFormat == TileFormat.JPG) {
+            imageType = BufferedImage.TYPE_INT_RGB;
+        }
         BufferedImage tile = new BufferedImage(fTileSize, fTileSize, imageType);
         Color canvasColor = getBackgroundColor();
         Graphics2D g = tile.createGraphics();

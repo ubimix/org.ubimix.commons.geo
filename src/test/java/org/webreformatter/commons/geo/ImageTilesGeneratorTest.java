@@ -6,12 +6,12 @@ package org.webreformatter.commons.geo;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 
 import junit.framework.TestCase;
 
-import org.webreformatter.commons.geo.ImageTilesGenerator.ITileImageListener;
+import org.webreformatter.commons.geo.AbstractImageTilesGenerator.TilesStat;
+import org.webreformatter.commons.geo.ImageTilesGenerator.FileTileWriter;
 import org.webreformatter.commons.geo.ImageTilesGenerator.TileFormat;
 
 /**
@@ -56,7 +56,8 @@ public class ImageTilesGeneratorTest extends TestCase {
 
         final File rootDir = outputDir;
         final int[] minZoom = { maxZoom };
-        generator.generateTiles(maxZoom, new ITileImageListener() {
+        TilesStat stat = generator.generateTiles(maxZoom, new FileTileWriter(
+            rootDir) {
             @Override
             public void onTile(
                 TileInfo tile,
@@ -65,22 +66,12 @@ public class ImageTilesGeneratorTest extends TestCase {
                 if (minZoom[0] > tile.getZoom()) {
                     minZoom[0] = tile.getZoom();
                 }
-                String type = tileFormat.toString();
-                String path = tile.getTilePath(type);
-                File tileFile = new File(rootDir, path);
-                System.out.println("Writing tile: " + tileFile);
-                tileFile.getParentFile().mkdirs();
-                try {
-                    FileOutputStream out = new FileOutputStream(tileFile);
-                    ImageTilesGenerator.writeImage(tileImage, out, type);
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
+                System.out.println("Tile: "
+                    + tile.getTilePath(tileFormat.toString()));
+                super.onTile(tile, tileImage, tileFormat);
             }
         });
-        System.out.println("{");
-        System.out.println("  \"minZoom\": " + minZoom[0] + ",");
-        System.out.println("  \"minZoom\": " + minZoom[0] + ",");
+        System.out.println(stat);
     }
 
 }
