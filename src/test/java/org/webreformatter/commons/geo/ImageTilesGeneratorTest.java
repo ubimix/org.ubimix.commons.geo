@@ -3,6 +3,7 @@
  */
 package org.webreformatter.commons.geo;
 
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,6 +12,7 @@ import java.io.InputStream;
 import junit.framework.TestCase;
 
 import org.webreformatter.commons.geo.ImageTilesGenerator.ITileImageListener;
+import org.webreformatter.commons.geo.ImageTilesGenerator.TileFormat;
 
 /**
  * @author kotelnikov
@@ -34,7 +36,6 @@ public class ImageTilesGeneratorTest extends TestCase {
             dirName = dirName.substring(0, idx);
         }
         File outputDir = new File("./tmp", dirName);
-        // outputDir = new File("../../../GeoTest/abc");
 
         InputStream input = getClass().getResourceAsStream("/" + name);
         BufferedImage image = ImageTilesGenerator.readImage(input);
@@ -44,21 +45,27 @@ public class ImageTilesGeneratorTest extends TestCase {
         ImagePoint screenSize = new ImagePoint(400, 500);
 
         int imageZoomLevel = 18;
-        int minZoom = 1;
         int maxZoom = imageZoomLevel;
-        ImageTilesGenerator generator = new ImageTilesGenerator(
-            image,
-            pinPointGeo,
-            pinPoint,
-            imageZoomLevel,
-            screenSize);
+        ImageTilesGenerator generator = new ImageTilesGenerator(image);
+        generator.setPinPoint(pinPoint);
+        generator.setPinPointGeo(pinPointGeo);
+        generator.setImageZoomLevel(imageZoomLevel);
+        generator.setScreenSize(screenSize);
+        // generator.setTileFormat(TileFormat.PNG);
+        generator.setBackgroundColor(Color.WHITE);
 
         final File rootDir = outputDir;
-        generator.generateTiles(minZoom, maxZoom, new ITileImageListener() {
+        final int[] minZoom = { maxZoom };
+        generator.generateTiles(maxZoom, new ITileImageListener() {
             @Override
-            public void onTile(TileInfo tile, BufferedImage tileImage) {
-                String type = "png";
-                // type = "jpg";
+            public void onTile(
+                TileInfo tile,
+                BufferedImage tileImage,
+                TileFormat tileFormat) {
+                if (minZoom[0] > tile.getZoom()) {
+                    minZoom[0] = tile.getZoom();
+                }
+                String type = tileFormat.toString();
                 String path = tile.getTilePath(type);
                 File tileFile = new File(rootDir, path);
                 System.out.println("Writing tile: " + tileFile);
@@ -71,6 +78,9 @@ public class ImageTilesGeneratorTest extends TestCase {
                 }
             }
         });
+        System.out.println("{");
+        System.out.println("  \"minZoom\": " + minZoom[0] + ",");
+        System.out.println("  \"minZoom\": " + minZoom[0] + ",");
     }
 
 }

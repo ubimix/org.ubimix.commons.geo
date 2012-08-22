@@ -7,6 +7,7 @@ import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
@@ -24,12 +25,31 @@ import javax.imageio.stream.ImageInputStream;
 /**
  * @author kotelnikov
  */
-public class ImageTilesGenerator {
+public class ImageTilesGenerator extends AbstractImageTilesGenerator {
 
     public interface ITileImageListener {
 
-        void onTile(TileInfo tile, BufferedImage tileImage);
+        void onTile(
+            TileInfo tile,
+            BufferedImage tileImage,
+            TileFormat tileFormat);
 
+    }
+
+    public static enum TileFormat {
+
+        JPG("jpg"), PNG("png");
+
+        private String fExt;
+
+        private TileFormat(String ext) {
+            fExt = ext;
+        }
+
+        @Override
+        public String toString() {
+            return fExt;
+        }
     }
 
     public static BufferedImage readImage(InputStream input) throws IOException {
@@ -53,122 +73,103 @@ public class ImageTilesGenerator {
         }
     }
 
+    private Color fBackgroundColor;
+
     private BufferedImage fImage;
 
-    private int fImageZoomLevel;
+    private ITileImageListener fListener;
 
-    private ImagePoint fPinPoint;
-
-    private GeoPoint fPinPointGeo;
-
-    private ImagePoint fScreenSize;
-
-    private int fTileSize = 256;
+    private TileFormat fTileFormat = TileFormat.JPG;
 
     private Image fTileTemplate;
 
-    public ImageTilesGenerator(
-        BufferedImage image,
-        GeoPoint pinPointGeo,
-        ImagePoint pinPoint,
-        int imageZoomLevel) {
-        this(image, pinPointGeo, pinPoint, imageZoomLevel, null);
+    public ImageTilesGenerator(BufferedImage image) {
+        fImage = image;
     }
 
-    /**
-     * 
-     */
-    public ImageTilesGenerator(
-        BufferedImage image,
-        GeoPoint pinPointGeo,
-        ImagePoint pinPoint,
-        int imageZoomLevel,
-        ImagePoint screenSize) {
-        fImage = image;
-        fPinPoint = pinPoint;
-        fPinPointGeo = pinPointGeo;
-        fScreenSize = screenSize;
-        fImageZoomLevel = imageZoomLevel;
+    @Override
+    protected void copyTile(
+        TileInfo tile,
+        int sourceTileSize,
+        int targetTileSize,
+        ImagePoint sourceLeftTop,
+        ImagePoint sourceBottomRight,
+        ImagePoint targetLeftTop,
+        ImagePoint targetBottomRight) {
+        BufferedImage tileImage = newEmptyTile();
+        Graphics2D g = tileImage.createGraphics();
+        try {
+            if (targetLeftTop.getX() != targetBottomRight.getX()
+                && targetLeftTop.getY() != targetBottomRight.getY()) {
+                g.setRenderingHint(
+                    RenderingHints.KEY_INTERPOLATION,
+                    RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g.setRenderingHint(
+                    RenderingHints.KEY_ALPHA_INTERPOLATION,
+                    RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+                g.setComposite(AlphaComposite.SrcOver);
+                ImageObserver observer = null;
+                g.drawImage(
+                    fImage,
+                    (int) targetLeftTop.getX(),
+                    (int) targetLeftTop.getY(),
+                    (int) targetBottomRight.getX(),
+                    (int) targetBottomRight.getY(),
+                    (int) sourceLeftTop.getX(),
+                    (int) sourceLeftTop.getY(),
+                    (int) sourceBottomRight.getX(),
+                    (int) sourceBottomRight.getY(),
+                    observer);
+            }
+        } finally {
+            g.dispose();
+        }
+        fListener.onTile(tile, tileImage, fTileFormat);
     }
 
     public void generateTiles(
         int minZoomLevel,
         int maxZoomLevel,
         final ITileImageListener listener) {
-        final int imageWidth = fImage.getWidth();
-        final int imageHeight = fImage.getHeight();
-        ImagePoint imageSize = new ImagePoint(imageHeight, imageWidth);
-        int maxLevel = Math.max(
-            Math.max(fImageZoomLevel, minZoomLevel),
-            maxZoomLevel);
-        for (int zoomLevel = minZoomLevel; zoomLevel <= maxZoomLevel; zoomLevel++) {
-            final int scale = 1 << (maxLevel - zoomLevel);
-            int sourceTileSize = fTileSize * scale;
-            final ImageTiler tiler = new ImageTiler(
-                sourceTileSize,
-                fPinPointGeo,
-                fPinPoint,
-                zoomLevel);
-            TilesLoader loader = tiler.getTilesLoader(imageSize, fScreenSize);
-            loader.load(new TilesLoader.LoadListener() {
+        fListener = listener;
+        try {
+            generateTiles(
+                minZoomLevel,
+                maxZoomLevel,
+                new ImagePoint(fImage.getHeight(), fImage.getWidth()));
+        } finally {
+            fListener = null;
+        }
+    }
 
-                @Override
-                public void onTile(TileInfo tile) {
-                    ImagePoint position = tiler.getTilePosition(tile);
-                    int targetTileSize = fTileSize;
-                    int sourceTileSize = (int) tiler.getTileSize();
-                    BufferedImage tileImage = newEmptyTile();
-                    int sourceX = (int) position.getX();
-                    int sourceY = (int) position.getY();
-                    int targetX = 0;
-                    int targetY = 0;
-                    if (sourceX < 0) {
-                        targetX = -sourceX / scale;
-                        sourceX = 0;
-                    }
-                    if (sourceY < 0) {
-                        targetY = -sourceY / scale;
-                        sourceY = 0;
-                    }
-                    int sourceWidth = Math.min(
-                        imageWidth - sourceX,
-                        Math.min(sourceTileSize, imageWidth - sourceX));
-                    int sourceHeight = Math.min(
-                        imageHeight - sourceY,
-                        Math.min(sourceTileSize, imageHeight - sourceY));
-                    int targetWidth = Math.min(targetTileSize, sourceWidth
-                        / scale);
-                    int targetHeight = Math.min(targetTileSize, sourceHeight
-                        / scale);
+    public void generateTiles(
+        int maxZoomLevel,
+        final ITileImageListener listener) {
+        fListener = listener;
+        try {
+            generateTiles(maxZoomLevel, new ImagePoint(
+                fImage.getHeight(),
+                fImage.getWidth()));
+        } finally {
+            fListener = null;
+        }
+    }
 
-                    if (targetWidth > 0 && targetHeight > 0) {
-                        Graphics2D g = tileImage.createGraphics();
-                        try {
-                            g.setComposite(AlphaComposite.SrcOver);
-                            ImageObserver observer = null;
-                            g.drawImage(
-                                fImage,
-                                targetX,
-                                targetY,
-                                targetX + targetWidth,
-                                targetY + targetHeight,
-                                sourceX,
-                                sourceY,
-                                sourceX + sourceWidth,
-                                sourceY + sourceHeight,
-                                observer);
-                        } finally {
-                            g.dispose();
-                        }
-                    }
-                    listener.onTile(tile, tileImage);
-                }
-            });
+    public void generateTiles(final ITileImageListener listener) {
+        fListener = listener;
+        try {
+            generateTiles(new ImagePoint(fImage.getHeight(), fImage.getWidth()));
+        } finally {
+            fListener = null;
         }
     }
 
     public Color getBackgroundColor() {
-        return Color.WHITE;
+        return fBackgroundColor;
+    }
+
+    public TileFormat getTileFormat() {
+        return fTileFormat;
     }
 
     private Image getTileTemplate() {
@@ -195,15 +196,31 @@ public class ImageTilesGenerator {
     }
 
     private BufferedImage newEmptyTile() {
-        Image img = getTileTemplate();
-        BufferedImage tile = new BufferedImage(
-            img.getWidth(null),
-            img.getHeight(null),
-            BufferedImage.TYPE_INT_ARGB);
-        final Graphics2D g2 = tile.createGraphics();
-        g2.drawImage(img, 0, 0, null);
-        g2.dispose();
+        int imageType = BufferedImage.TYPE_INT_ARGB;
+        BufferedImage tile = new BufferedImage(fTileSize, fTileSize, imageType);
+        Color canvasColor = getBackgroundColor();
+        Graphics2D g = tile.createGraphics();
+        try {
+            if (canvasColor != null) {
+                g.setColor(canvasColor);
+                g.fillRect(0, 0, fTileSize, fTileSize);
+            } else if (fTileFormat == TileFormat.PNG) {
+                Image template = getTileTemplate();
+                final Graphics2D g2 = tile.createGraphics();
+                g2.drawImage(template, 0, 0, null);
+            }
+        } finally {
+            g.dispose();
+        }
         return tile;
+    }
+
+    public void setBackgroundColor(Color backgroundColor) {
+        fBackgroundColor = backgroundColor;
+    }
+
+    public void setTileFormat(TileFormat tileFormat) {
+        fTileFormat = tileFormat != null ? tileFormat : TileFormat.JPG;
     }
 
 }
