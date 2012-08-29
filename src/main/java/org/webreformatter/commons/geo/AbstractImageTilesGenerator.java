@@ -11,90 +11,6 @@ import java.util.Map;
  */
 public abstract class AbstractImageTilesGenerator {
 
-    public static class TilesStat {
-
-        private GeoPoint fBottomRightGeo;
-
-        private int fMaxZoomLevel;
-
-        private int fMinZoomLevel;
-
-        private GeoPoint fTopLeftGeo;
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (!(obj instanceof TilesStat)) {
-                return false;
-            }
-            TilesStat o = (TilesStat) obj;
-            return toString().equals(o.toString());
-        }
-
-        public GeoPoint getBottomRightGeo() {
-            return fBottomRightGeo;
-        }
-
-        public int getMaxZoomLevel() {
-            return fMaxZoomLevel;
-        }
-
-        public int getMinZoomLevel() {
-            return fMinZoomLevel;
-        }
-
-        public GeoPoint getTopLeftGeo() {
-            return fTopLeftGeo;
-        }
-
-        @Override
-        public int hashCode() {
-            return toString().hashCode();
-        }
-
-        public TilesStat setBottomRightGeo(GeoPoint bottomRightGeo) {
-            fBottomRightGeo = bottomRightGeo;
-            return this;
-        }
-
-        public TilesStat setMaxZoomLevel(int maxZoomLevel) {
-            fMaxZoomLevel = maxZoomLevel;
-            return this;
-        }
-
-        public TilesStat setMinZoomLevel(int minZoomLevel) {
-            fMinZoomLevel = minZoomLevel;
-            return this;
-        }
-
-        public TilesStat setTopLeftGeo(GeoPoint topLeftGeo) {
-            fTopLeftGeo = topLeftGeo;
-            return this;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder buf = new StringBuilder();
-            buf.append("{\n");
-            buf.append("  \"minZoom\" : " + fMinZoomLevel + ",\n");
-            buf.append("  \"maxZoom\" : " + fMaxZoomLevel + ",\n");
-            buf.append("  \"area\" : [["
-                + fTopLeftGeo.getLatitude()
-                + ","
-                + fTopLeftGeo.getLongitude()
-                + "],["
-                + fBottomRightGeo.getLatitude()
-                + ","
-                + fBottomRightGeo.getLongitude()
-                + "]]\n");
-            buf.append("}");
-            return buf.toString();
-        }
-
-    }
-
     private Map<Integer, ImageTiler> fImageTilers = new HashMap<Integer, ImageTiler>();
 
     private int fImageZoomLevel;
@@ -126,16 +42,20 @@ public abstract class AbstractImageTilesGenerator {
         ImagePoint targetLeftTop,
         ImagePoint targetBottomRight);
 
-    protected TilesStat generateTiles(ImagePoint imageSize) {
-        return generateTiles(getImageZoomLevel(), imageSize);
+    protected void generateTiles(ImagePoint imageSize) {
+        generateTiles(getImageZoomLevel(), imageSize);
     }
 
-    protected TilesStat generateTiles(int maxZoomLevel, ImagePoint imageSize) {
+    protected void generateTiles(int maxZoomLevel, ImagePoint imageSize) {
         int minZoomLevel = maxZoomLevel;
         ImagePoint screenSize = getScreenSize();
         if (screenSize != null) {
-            for (int zoom = maxZoomLevel; zoom >= 0; zoom--) {
-                final int scale = 1 << (maxZoomLevel - zoom);
+            int max = maxZoomLevel;
+            if (fImageZoomLevel > 0 && fImageZoomLevel < max) {
+                max = fImageZoomLevel;
+            }
+            for (int zoom = max; zoom >= 0; zoom--) {
+                final int scale = 1 << (max - zoom);
                 long newImageWidth = imageSize.getX() / scale;
                 long newImageHeight = imageSize.getY() / scale;
                 if (newImageWidth <= screenSize.getX()
@@ -145,20 +65,13 @@ public abstract class AbstractImageTilesGenerator {
                 minZoomLevel = zoom;
             }
         }
-        return generateTiles(minZoomLevel, maxZoomLevel, imageSize);
+        generateTiles(minZoomLevel, maxZoomLevel, imageSize);
     }
 
-    protected TilesStat generateTiles(
+    protected void generateTiles(
         int minZoomLevel,
         int maxZoomLevel,
         final ImagePoint imageSize) {
-        TilesStat stat = new TilesStat();
-        stat.setMinZoomLevel(minZoomLevel).setMaxZoomLevel(maxZoomLevel);
-        final ImageTiler maxTiler = getImageTiler(maxZoomLevel);
-        GeoPoint topLeftGeo = maxTiler.getGeoPosition(new ImagePoint(0, 0));
-        stat.setTopLeftGeo(topLeftGeo);
-        GeoPoint bottomRightGeo = maxTiler.getGeoPosition(imageSize);
-        stat.setBottomRightGeo(bottomRightGeo);
         for (int zoomLevel = minZoomLevel; zoomLevel <= maxZoomLevel; zoomLevel++) {
             final ImageTiler tiler = getImageTiler(zoomLevel);
             final double scale = getImageBlockScale(zoomLevel);
@@ -211,7 +124,6 @@ public abstract class AbstractImageTilesGenerator {
                 }
             });
         }
-        return stat;
     }
 
     /**

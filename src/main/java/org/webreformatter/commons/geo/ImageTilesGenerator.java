@@ -172,26 +172,14 @@ public class ImageTilesGenerator extends AbstractImageTilesGenerator {
         fListener.onTile(tile, tileImage, fTileFormat);
     }
 
-    public TilesStat generateTiles(
+    public void generateTiles(
         int minZoomLevel,
         int maxZoomLevel,
         final ITileImageListener listener) {
         fListener = listener;
         try {
-            return generateTiles(minZoomLevel, maxZoomLevel, new ImagePoint(
-                fImage.getHeight(),
-                fImage.getWidth()));
-        } finally {
-            fListener = null;
-        }
-    }
-
-    public TilesStat generateTiles(
-        int maxZoomLevel,
-        final ITileImageListener listener) {
-        fListener = listener;
-        try {
-            return generateTiles(
+            generateTiles(
+                minZoomLevel,
                 maxZoomLevel,
                 new ImagePoint(fImage.getHeight(), fImage.getWidth()));
         } finally {
@@ -199,12 +187,23 @@ public class ImageTilesGenerator extends AbstractImageTilesGenerator {
         }
     }
 
-    public TilesStat generateTiles(final ITileImageListener listener) {
+    public void generateTiles(
+        int maxZoomLevel,
+        final ITileImageListener listener) {
         fListener = listener;
         try {
-            return generateTiles(new ImagePoint(
+            generateTiles(maxZoomLevel, new ImagePoint(
                 fImage.getHeight(),
                 fImage.getWidth()));
+        } finally {
+            fListener = null;
+        }
+    }
+
+    public void generateTiles(final ITileImageListener listener) {
+        fListener = listener;
+        try {
+            generateTiles(new ImagePoint(fImage.getHeight(), fImage.getWidth()));
         } finally {
             fListener = null;
         }
