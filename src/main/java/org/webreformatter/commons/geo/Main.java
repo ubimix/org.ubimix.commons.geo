@@ -56,6 +56,22 @@ public class Main {
         fImageUrl = str;
     }
 
+    protected TileFormat getFormat() {
+        TileFormat format = null;
+        String str = getParameter("format", null);
+        if (str == null) {
+            int idx = fImageUrl.lastIndexOf(".");
+            if (idx >= 0) {
+                str = fImageUrl.substring(idx + 1);
+                format = TileFormat.fromString(str, null);
+            }
+        }
+        if (format == null) {
+            format = TileFormat.fromString(str, TileFormat.JPG);
+        }
+        return format;
+    }
+
     protected String getImageName(String name) {
         int idx = name.lastIndexOf('/');
         if (idx > 0) {
@@ -131,7 +147,8 @@ public class Main {
         generator.setPinPointGeo(pinPointGeo);
         generator.setImageZoomLevel(imageZoomLevel);
         generator.setScreenSize(screenSize);
-        // generator.setTileFormat(TileFormat.PNG);
+        TileFormat format = getFormat();
+        generator.setTileFormat(format);
         generator.setBackgroundColor(Color.WHITE);
 
         println("Splitting the image to tiles.");
@@ -158,8 +175,18 @@ public class Main {
             tiler,
             maxZoom,
             minZoom[0],
-            "dir",
-            "\"" + dirName + "\"");
+            "id",
+            "\"" + dirName + "\"",
+            "title",
+            "\"" + dirName + "\"",
+            "url",
+            "\"" + fImageUrl + "\"",
+            "width",
+            image.getWidth(),
+            "height",
+            image.getHeight(),
+            "format",
+            "\"" + format + "\"");
         println(json);
         println("Done.");
     }

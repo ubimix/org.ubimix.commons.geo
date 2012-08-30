@@ -85,6 +85,19 @@ public class ImageTilesGenerator extends AbstractImageTilesGenerator {
 
         JPG("jpg"), PNG("png");
 
+        public static TileFormat fromString(String str, TileFormat defaultValue) {
+            if (str != null) {
+                str = str.toLowerCase();
+                if (JPG.toString().equals(str)) {
+                    return JPG;
+                }
+                if (PNG.toString().equals(str)) {
+                    return PNG;
+                }
+            }
+            return defaultValue;
+        }
+
         private String fExt;
 
         private TileFormat(String ext) {

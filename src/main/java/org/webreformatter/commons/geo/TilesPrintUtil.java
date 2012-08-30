@@ -12,10 +12,16 @@ public class TilesPrintUtil {
         Object... args) {
         ImagePoint pinPoint = new ImagePoint(0, 0);
         GeoPoint topLeftGeo = tiler.getGeoPosition(pinPoint);
+        TileInfo firstTile = tiler.getTile(pinPoint);
+        GeoPoint topLeftMaxGeo = firstTile.getTopLeftCoordinates();
+
         ImagePoint imageSize = new ImagePoint(
             image.getHeight(),
             image.getWidth());
         GeoPoint bottomRightGeo = tiler.getGeoPosition(imageSize);
+        TileInfo lastTile = tiler.getTile(imageSize);
+        GeoPoint bottomRightMaxGeo = lastTile.getBottomRightCoordinates();
+
         StringBuilder buf = new StringBuilder();
         buf.append("{");
         toJsonParams(
@@ -34,7 +40,18 @@ public class TilesPrintUtil {
                 + toJsonArray(
                     null,
                     bottomRightGeo.getLatitude(),
-                    bottomRightGeo.getLongitude()) + "]");
+                    bottomRightGeo.getLongitude()) + "]",
+            "areaMax",
+            "["
+                + toJsonArray(
+                    null,
+                    topLeftMaxGeo.getLatitude(),
+                    topLeftMaxGeo.getLongitude())
+                + ","
+                + toJsonArray(
+                    null,
+                    bottomRightMaxGeo.getLatitude(),
+                    bottomRightMaxGeo.getLongitude()) + "]");
         if (args.length > 0) {
             buf.append(",");
             toJsonParams(buf, args);
