@@ -1,4 +1,4 @@
-package org.webreformatter.commons.geo;
+package org.ubimix.commons.geo;
 
 /**
  * A geographic point containing longitude/latitude values.

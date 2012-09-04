@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.webreformatter.commons.geo;
+package org.ubimix.commons.geo;
 
 /**
  * @author kotelnikov

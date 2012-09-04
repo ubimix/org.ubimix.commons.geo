@@ -1,8 +1,8 @@
-package org.webreformatter.commons.geo;
+package org.ubimix.commons.geo;
 
 import java.io.File;
 
-import org.webreformatter.commons.geo.TilesLoader.DownloadListener;
+import org.ubimix.commons.geo.TilesLoader.DownloadListener;
 
 public class TileDownloadSandbox {
 

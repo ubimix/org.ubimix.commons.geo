@@ -1,4 +1,4 @@
-package org.webreformatter.commons.geo;
+package org.ubimix.commons.geo;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;

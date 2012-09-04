@@ -1,4 +1,4 @@
-package org.webreformatter.commons.geo;
+package org.ubimix.commons.geo;
 
 /**
  * Instances of this type represent image points.

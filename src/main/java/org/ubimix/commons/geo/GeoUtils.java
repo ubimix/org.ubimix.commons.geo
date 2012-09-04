@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.webreformatter.commons.geo;
+package org.ubimix.commons.geo;
 
 /**
  * This class contains utility methods used to transform geographic coordinates

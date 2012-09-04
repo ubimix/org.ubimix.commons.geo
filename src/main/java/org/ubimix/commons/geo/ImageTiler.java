@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.webreformatter.commons.geo;
+package org.ubimix.commons.geo;
 
 /**
  * This is an utility class used to transform an image in a set of geographic

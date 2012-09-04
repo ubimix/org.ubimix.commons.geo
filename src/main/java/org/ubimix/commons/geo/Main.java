@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.webreformatter.commons.geo;
+package org.ubimix.commons.geo;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -12,8 +12,8 @@ import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.webreformatter.commons.geo.ImageTilesGenerator.FileTileWriter;
-import org.webreformatter.commons.geo.ImageTilesGenerator.TileFormat;
+import org.ubimix.commons.geo.ImageTilesGenerator.FileTileWriter;
+import org.ubimix.commons.geo.ImageTilesGenerator.TileFormat;
 
 /**
  * @author kotelnikov
